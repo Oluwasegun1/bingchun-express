@@ -25,6 +25,7 @@ import {
   X,
   ExternalLink
 } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 const STATUS_TABS: { label: string; status: OrderStatus | 'all'; icon: any }[] = [
   { label: 'All Orders', status: 'all', icon: ShoppingBag },
@@ -96,34 +97,43 @@ export default function StaffDashboardPage() {
     <div className="min-h-screen bg-[#F0F4FA] flex flex-col font-sans">
       
       {/* Staff Ops Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-[#12233F] text-white border-b border-white/10 shadow-md">
+      <header className="sticky top-0 z-40 bg-ink text-white border-b border-white/10 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-all hover:scale-105 active:scale-95 border border-white/10"
               title="Return to Customer Storefront"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
 
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#0C5CC4] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                冰淳
-              </div>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white p-1 shadow-md ring-1 ring-white/20 transition-all duration-200 hover:scale-105 hover:ring-brand/40"
+                title="Bing Chun Express — Customer Storefront"
+              >
+                <BrandLogo size={40} priority className="rounded-xl object-contain transition-transform duration-200 group-hover:scale-105" />
+              </Link>
+
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="font-heading text-lg font-black tracking-tight leading-none">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="font-display text-base sm:text-lg font-black tracking-tight text-white leading-none">
                     Bing Chun Kitchen &amp; Storefront Ops
                   </h1>
-                  <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 shadow-sm">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    </span>
                     Live Session
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">
+                <p className="mt-1 text-[11px] font-medium text-slate-400">
                   Staff Order Processing &amp; Express Queue Management
-                </span>
+                </p>
               </div>
             </div>
           </div>
@@ -153,7 +163,7 @@ export default function StaffDashboardPage() {
 
             <Link
               href="/"
-              className="px-3.5 py-2 rounded-xl bg-[#0C5CC4] hover:bg-[#084393] text-white text-xs font-bold transition-all shadow-xs"
+              className="px-3.5 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-bold transition-all shadow-xs"
             >
               Customer View
             </Link>
@@ -179,7 +189,7 @@ export default function StaffDashboardPage() {
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-500 uppercase">Confirmed</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="font-heading text-2xl font-black text-[#0C5CC4]">
+              <span className="font-heading text-2xl font-black text-brand">
                 {metrics.confirmedCount}
               </span>
               <span className="text-[10px] text-slate-400 font-medium">queued</span>
@@ -216,10 +226,10 @@ export default function StaffDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs bg-gradient-to-br from-[#0C5CC4]/5 to-transparent">
-            <span className="text-[11px] font-bold text-[#0C5CC4] uppercase">Demo Day Volume</span>
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs bg-gradient-to-br from-brand/5 to-transparent">
+            <span className="text-[11px] font-bold text-brand uppercase">Demo Day Volume</span>
             <div className="mt-1">
-              <span className="font-heading text-xl font-black text-[#12233F] block">
+              <span className="font-heading text-xl font-black text-ink block">
                 {formatNaira(metrics.totalSales)}
               </span>
               <span className="text-[10px] text-slate-400 font-medium">
@@ -246,13 +256,13 @@ export default function StaffDashboardPage() {
                   onClick={() => setActiveTab(tab.status)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                     isActive
-                      ? 'bg-[#12233F] text-white shadow-xs'
+                      ? 'bg-ink text-white shadow-xs'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                   }`}
                 >
                   <span>{tab.label}</span>
                   <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-extrabold ${
-                    isActive ? 'bg-[#0C5CC4] text-white' : 'bg-slate-200 text-slate-700'
+                    isActive ? 'bg-brand text-white' : 'bg-slate-200 text-slate-700'
                   }`}>
                     {count}
                   </span>
@@ -271,7 +281,7 @@ export default function StaffDashboardPage() {
                 placeholder="Search order #, PIN, customer..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:border-[#0C5CC4] text-xs text-[#12233F] font-medium"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:border-brand text-xs text-ink font-medium"
               />
             </div>
 
@@ -279,7 +289,7 @@ export default function StaffDashboardPage() {
             <select
               value={selectedBranchFilter}
               onChange={(e) => setSelectedBranchFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#12233F] focus:outline-hidden"
+              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-ink focus:outline-hidden"
             >
               <option value="all">All Branches</option>
               {branches.map((b) => (
@@ -297,10 +307,10 @@ export default function StaffDashboardPage() {
             <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <ShoppingBag className="w-7 h-7" />
             </div>
-            <h3 className="font-heading text-lg font-bold text-[#12233F]">
+            <h3 className="font-heading text-lg font-bold text-ink">
               No orders in this view
             </h3>
-            <p className="text-xs text-[#5B6E8C] max-w-sm mx-auto">
+            <p className="text-xs text-muted max-w-sm mx-auto">
               Try selecting another status tab or clear the search query.
             </p>
           </div>
@@ -333,10 +343,10 @@ export default function StaffDashboardPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-heading text-xl font-black text-[#12233F]">
+                          <span className="font-heading text-xl font-black text-ink">
                             {order.id}
                           </span>
-                          <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFD23F] text-[#12233F]">
+                          <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFD23F] text-ink">
                             PIN: {order.pickupCode}
                           </span>
                         </div>
@@ -365,7 +375,7 @@ export default function StaffDashboardPage() {
                     {/* Customer Info */}
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
                       <div>
-                        <span className="font-bold text-[#12233F]">{order.customerName}</span>
+                        <span className="font-bold text-ink">{order.customerName}</span>
                         <p className="text-[11px] text-slate-500">{order.customerPhone}</p>
                       </div>
                       <span className="text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded-md border border-slate-200">
@@ -381,14 +391,14 @@ export default function StaffDashboardPage() {
                       <div className="space-y-2">
                         {order.items.map((item, idx) => (
                           <div key={idx} className="text-xs">
-                            <div className="flex justify-between font-bold text-[#12233F]">
+                            <div className="flex justify-between font-bold text-ink">
                               <span>
                                 {item.quantity}× {item.productName}
                               </span>
                               <span>{formatNaira(item.totalPrice)}</span>
                             </div>
                             {/* Customization Details for Barista */}
-                            <div className="text-[10px] text-[#0C5CC4] font-medium flex flex-wrap gap-1 mt-0.5">
+                            <div className="text-[10px] text-brand font-medium flex flex-wrap gap-1 mt-0.5">
                               {item.customization.size && <span>[{item.customization.size}]</span>}
                               {item.customization.sweetness && <span>Sugar: {item.customization.sweetness}</span>}
                               {item.customization.ice && <span>Ice: {item.customization.ice}</span>}
@@ -415,7 +425,7 @@ export default function StaffDashboardPage() {
 
                   {/* Order Footer Actions */}
                   <div className="pt-4 mt-3 border-t border-slate-100 flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-[#12233F]">
+                    <div className="flex items-center justify-between text-xs font-bold text-ink">
                       <span className="text-slate-500 font-semibold">Total:</span>
                       <span className="text-sm font-black">{formatNaira(order.total)}</span>
                     </div>
@@ -426,7 +436,7 @@ export default function StaffDashboardPage() {
                         <>
                           <button
                             onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                            className="py-2 px-3 rounded-xl bg-[#0C5CC4] hover:bg-[#084393] text-white text-xs font-bold transition-colors shadow-2xs"
+                            className="py-2 px-3 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-bold transition-colors shadow-2xs"
                           >
                             Accept &amp; Confirm
                           </button>
@@ -465,7 +475,7 @@ export default function StaffDashboardPage() {
                         <>
                           <button
                             onClick={() => updateOrderStatus(order.id, 'collected')}
-                            className="py-2 px-3 rounded-xl bg-[#12233F] hover:bg-black text-white text-xs font-bold transition-colors shadow-2xs col-span-2"
+                            className="py-2 px-3 rounded-xl bg-ink hover:bg-black text-white text-xs font-bold transition-colors shadow-2xs col-span-2"
                           >
                             Hand to Customer (Collected)
                           </button>
@@ -483,7 +493,7 @@ export default function StaffDashboardPage() {
                     <div className="flex items-center justify-between pt-1">
                       <button
                         onClick={() => setSelectedOrderDetails(order)}
-                        className="text-[11px] font-bold text-[#0C5CC4] hover:underline flex items-center gap-1"
+                        className="text-[11px] font-bold text-brand hover:underline flex items-center gap-1"
                       >
                         <Eye className="w-3 h-3" />
                         <span>Full Details</span>
@@ -492,7 +502,7 @@ export default function StaffDashboardPage() {
                       <Link
                         href={`/track/${order.id}`}
                         target="_blank"
-                        className="text-[11px] text-slate-500 hover:text-[#0C5CC4] flex items-center gap-1 font-semibold"
+                        className="text-[11px] text-slate-500 hover:text-brand flex items-center gap-1 font-semibold"
                       >
                         <span>Customer Screen</span>
                         <ExternalLink className="w-2.5 h-2.5" />
@@ -514,8 +524,8 @@ export default function StaffDashboardPage() {
           <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
-                <span className="text-[10px] font-extrabold uppercase text-[#0C5CC4] tracking-wider">Order Detail</span>
-                <h3 className="font-heading text-xl font-black text-[#12233F]">
+                <span className="text-[10px] font-extrabold uppercase text-brand tracking-wider">Order Detail</span>
+                <h3 className="font-heading text-xl font-black text-ink">
                   {selectedOrderDetails.id}
                 </h3>
               </div>
@@ -531,11 +541,11 @@ export default function StaffDashboardPage() {
               <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl">
                 <div>
                   <span className="text-slate-400 font-semibold block">Customer Name</span>
-                  <span className="font-bold text-[#12233F] text-sm">{selectedOrderDetails.customerName}</span>
+                  <span className="font-bold text-ink text-sm">{selectedOrderDetails.customerName}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 font-semibold block">Phone</span>
-                  <span className="font-bold text-[#12233F] text-sm">{selectedOrderDetails.customerPhone}</span>
+                  <span className="font-bold text-ink text-sm">{selectedOrderDetails.customerPhone}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 font-semibold block">Pickup Code</span>
@@ -543,20 +553,20 @@ export default function StaffDashboardPage() {
                 </div>
                 <div>
                   <span className="text-slate-400 font-semibold block">Branch</span>
-                  <span className="font-bold text-[#12233F] text-sm">{selectedOrderDetails.branchName}</span>
+                  <span className="font-bold text-ink text-sm">{selectedOrderDetails.branchName}</span>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-bold text-sm text-[#12233F] mb-2">Itemized Prep List</h4>
+                <h4 className="font-bold text-sm text-ink mb-2">Itemized Prep List</h4>
                 <div className="space-y-2 divide-y divide-slate-100">
                   {selectedOrderDetails.items.map((i, idx) => (
                     <div key={idx} className="pt-2">
-                      <div className="flex justify-between font-bold text-[#12233F]">
+                      <div className="flex justify-between font-bold text-ink">
                         <span>{i.quantity}× {i.productName}</span>
                         <span>{formatNaira(i.totalPrice)}</span>
                       </div>
-                      <div className="text-[11px] text-[#0C5CC4] mt-0.5 space-x-1">
+                      <div className="text-[11px] text-brand mt-0.5 space-x-1">
                         {i.customization.size && <span>Size: {i.customization.size}</span>}
                         {i.customization.sweetness && <span>· Sugar: {i.customization.sweetness}</span>}
                         {i.customization.ice && <span>· Ice: {i.customization.ice}</span>}
@@ -569,16 +579,16 @@ export default function StaffDashboardPage() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-between font-black text-sm text-[#12233F]">
+              <div className="pt-3 border-t border-slate-100 flex justify-between font-black text-sm text-ink">
                 <span>Total Amount:</span>
-                <span className="text-base text-[#0C5CC4]">{formatNaira(selectedOrderDetails.total)}</span>
+                <span className="text-base text-brand">{formatNaira(selectedOrderDetails.total)}</span>
               </div>
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
               <button
                 onClick={() => setSelectedOrderDetails(null)}
-                className="px-4 py-2 bg-[#12233F] text-white text-xs font-bold rounded-xl"
+                className="px-4 py-2 bg-ink text-white text-xs font-bold rounded-xl"
               >
                 Close
               </button>
@@ -595,10 +605,10 @@ export default function StaffDashboardPage() {
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-heading text-lg font-bold text-[#12233F]">
+              <h3 className="font-heading text-lg font-bold text-ink">
                 Cancel Demo Order #{orderToCancel.id}?
               </h3>
-              <p className="text-xs text-[#5B6E8C] mt-1">
+              <p className="text-xs text-muted mt-1">
                 Are you sure you want to cancel {orderToCancel.customerName}&rsquo;s order? This demo status will immediately reflect on the customer tracking view.
               </p>
             </div>

@@ -109,7 +109,7 @@ export default function MenuManagementPage() {
     <div className="min-h-screen bg-[#F0F4FA] flex flex-col font-sans">
       
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#12233F] text-white border-b border-white/10 shadow-md">
+      <header className="sticky top-0 z-40 bg-ink text-white border-b border-white/10 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -124,7 +124,7 @@ export default function MenuManagementPage() {
                 <h1 className="font-heading text-lg font-black tracking-tight leading-none">
                   Menu &amp; Catalog Management
                 </h1>
-                <span className="bg-[#0C5CC4] text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
+                <span className="bg-brand text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
                   Admin Demo
                 </span>
               </div>
@@ -137,7 +137,7 @@ export default function MenuManagementPage() {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setIsAddingNew(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0C5CC4] hover:bg-[#084393] text-white text-xs font-bold transition-all shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-bold transition-all shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>Add Demo Item</span>
@@ -165,14 +165,14 @@ export default function MenuManagementPage() {
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:border-[#0C5CC4] text-xs text-[#12233F] font-medium"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-hidden focus:border-brand text-xs text-ink font-medium"
               />
             </div>
 
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#12233F]"
+              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-ink"
             >
               <option value="all">All Categories</option>
               {CATEGORIES.map((cat) => (
@@ -218,7 +218,7 @@ export default function MenuManagementPage() {
                           />
                         </div>
                         <div>
-                          <p className="font-bold text-sm text-[#12233F]">{p.name}</p>
+                          <p className="font-bold text-sm text-ink">{p.name}</p>
                           {p.chineseName && (
                             <span className="text-[11px] text-slate-400">{p.chineseName}</span>
                           )}
@@ -238,7 +238,7 @@ export default function MenuManagementPage() {
 
                     {/* Price */}
                     <td className="p-4">
-                      <span className="font-black text-sm text-[#12233F]">
+                      <span className="font-black text-sm text-ink">
                         {formatNaira(p.basePrice)}
                       </span>
                     </td>
@@ -246,7 +246,7 @@ export default function MenuManagementPage() {
                     {/* Verification */}
                     <td className="p-4">
                       {p.isVerified ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0C5CC4] bg-[#EEF5FF] px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand bg-brand-50 px-2 py-0.5 rounded-full">
                           <ShieldCheck className="w-3 h-3" />
                           Verified
                         </span>
@@ -287,7 +287,7 @@ export default function MenuManagementPage() {
                     <td className="p-4 text-right">
                       <button
                         onClick={() => setEditingProduct(p)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#0C5CC4] hover:text-white text-slate-700 font-bold transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-brand hover:text-white text-slate-700 font-bold transition-colors"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit</span>
@@ -307,7 +307,7 @@ export default function MenuManagementPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 space-y-4 border border-slate-200">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-heading text-lg font-bold text-[#12233F]">
+              <h3 className="font-heading text-lg font-bold text-ink">
                 Edit Product
               </h3>
               <button
@@ -370,7 +370,7 @@ export default function MenuManagementPage() {
                   id="editVerified"
                   checked={editingProduct.isVerified}
                   onChange={(e) => setEditingProduct({ ...editingProduct, isVerified: e.target.checked })}
-                  className="rounded text-[#0C5CC4]"
+                  className="rounded text-brand"
                 />
                 <label htmlFor="editVerified" className="text-slate-700 font-bold">
                   Mark as Verified Nigeria Menu Item
@@ -387,7 +387,7 @@ export default function MenuManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#0C5CC4] hover:bg-[#084393] text-white font-bold"
+                  className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold"
                 >
                   Save Changes
                 </button>
@@ -402,7 +402,7 @@ export default function MenuManagementPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 space-y-4 border border-slate-200">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-heading text-lg font-bold text-[#12233F]">
+              <h3 className="font-heading text-lg font-bold text-ink">
                 Add New Demo Product
               </h3>
               <button
@@ -478,7 +478,7 @@ export default function MenuManagementPage() {
                   id="newVerified"
                   checked={newProdIsVerified}
                   onChange={(e) => setNewProdIsVerified(e.target.checked)}
-                  className="rounded text-[#0C5CC4]"
+                  className="rounded text-brand"
                 />
                 <label htmlFor="newVerified" className="text-slate-700 font-bold">
                   Mark as Verified Official Item
@@ -495,7 +495,7 @@ export default function MenuManagementPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#0C5CC4] hover:bg-[#084393] text-white font-bold"
+                  className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold"
                 >
                   Add Product
                 </button>

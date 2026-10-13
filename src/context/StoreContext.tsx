@@ -7,7 +7,8 @@ import {
   CartItem, 
   CartItemCustomization, 
   Order, 
-  OrderStatus 
+  OrderStatus,
+  User
 } from '@/types';
 import { INITIAL_PRODUCTS } from '@/data/menu';
 import { INITIAL_BRANCHES } from '@/data/branches';
@@ -35,6 +36,7 @@ interface StoreContextType {
   addToCart: (product: Product, customization: CartItemCustomization, quantity?: number) => void;
   removeFromCart: (cartItemId: string) => void;
   updateCartItemQty: (cartItemId: string, delta: number) => void;
+  updateCartItem: (cartItemId: string, customization: CartItemCustomization, quantity: number) => void;
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
@@ -54,6 +56,20 @@ interface StoreContextType {
   getOrderById: (orderId: string) => Order | undefined;
   resetDemoData: () => void;
 
+  // Simulated authentication (demo only)
+  hydrated: boolean;
+  user: User | null;
+  signIn: (phone: string, name?: string) => User;
+  signOut: () => void;
+
+  // Favourites
+  favourites: string[];
+  toggleFavourite: (productId: string) => void;
+
+  // Search
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+
   // Toast / feedback message
   notification: string | null;
   showNotification: (msg: string) => void;
@@ -61,10 +77,24 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-const STORAGE_KEY_PRODUCTS = 'bc_products_v1';
-const STORAGE_KEY_ORDERS = 'bc_orders_v1';
-const STORAGE_KEY_CART = 'bc_cart_v1';
-const STORAGE_KEY_BRANCH = 'bc_selected_branch_v1';
+const STORAGE_KEY_PRODUCTS = 'bc_products_v3';
+const STORAGE_KEY_ORDERS = 'bc_orders_v2';
+const STORAGE_KEY_CART = 'bc_cart_v2';
+const STORAGE_KEY_BRANCH = 'bc_selected_branch_v2';
+const STORAGE_KEY_USER = 'bc_user_v2';
+const STORAGE_KEY_FAVS = 'bc_favs_v2';
+
+/** Normalise a Nigerian phone number to its last 10 digits. */
+export function normalisePhone(raw: string): string {
+  return raw.replace(/\D/g, '').slice(-10);
+}
+
+function priceFor(product: Product, c: CartItemCustomization): number {
+  let unit = product.basePrice;
+  if (c.size === 'Large (700ml)') unit += 600;
+  if (c.toppings?.length) unit += c.toppings.reduce((a, t) => a + t.price, 0);
+  return unit;
+}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [branches] = useState<Branch[]>(INITIAL_BRANCHES);
@@ -79,6 +109,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
   const [notification, setNotification] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [favourites, setFavourites] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -105,6 +139,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setCart(JSON.parse(storedCart));
       }
 
+      const storedUser = localStorage.getItem(STORAGE_KEY_USER);
+      if (storedUser) setUser(JSON.parse(storedUser));
+
+      const storedFavs = localStorage.getItem(STORAGE_KEY_FAVS);
+      if (storedFavs) setFavourites(JSON.parse(storedFavs));
+
       const storedBranchId = localStorage.getItem(STORAGE_KEY_BRANCH);
       if (storedBranchId) {
         const found = INITIAL_BRANCHES.find(b => b.id === storedBranchId);
@@ -113,6 +153,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.warn('Failed to hydrate state from localStorage', e);
     }
+    setHydrated(true);
   }, []);
 
   // Sync products to localStorage
@@ -141,6 +182,55 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.warn('Storage sync failed', e);
     }
   }, [cart]);
+
+  // Keep demo state in sync across browser tabs (e.g. staff dashboard in one tab, customer tracking in another).
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (!e.newValue) return;
+      try {
+        if (e.key === STORAGE_KEY_ORDERS) setOrders(JSON.parse(e.newValue));
+        if (e.key === STORAGE_KEY_PRODUCTS) setProducts(JSON.parse(e.newValue));
+      } catch {}
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_FAVS, JSON.stringify(favourites));
+    } catch {}
+  }, [favourites]);
+
+  const signIn = (phone: string, name?: string): User => {
+    const normalised = normalisePhone(phone);
+    const existing = orders.find((o) => normalisePhone(o.customerPhone) === normalised);
+    const next: User = {
+      id: `u-${normalised}`,
+      name: (name && name.trim()) || existing?.customerName || 'Bing Chun Guest',
+      phone: normalised,
+    };
+    setUser(next);
+    try {
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(next));
+    } catch {}
+    showNotification(`Signed in as ${next.name}`);
+    return next;
+  };
+
+  const signOut = () => {
+    setUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY_USER);
+    } catch {}
+    showNotification('You have been signed out');
+  };
+
+  const toggleFavourite = (productId: string) => {
+    setFavourites((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
 
   const setSelectedBranch = (b: Branch) => {
     setSelectedBranchState(b);
@@ -175,14 +265,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Cart operations
   const addToCart = (product: Product, customization: CartItemCustomization, quantity = 1) => {
-    let unitPrice = product.basePrice;
-    if (customization.size === 'Large (700ml)') {
-      unitPrice += 600;
-    }
-    if (customization.toppings && customization.toppings.length > 0) {
-      const toppingsPrice = customization.toppings.reduce((acc, t) => acc + t.price, 0);
-      unitPrice += toppingsPrice;
-    }
+    const unitPrice = priceFor(product, customization);
 
     const lineId = `${product.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const newItem: CartItem = {
@@ -196,7 +279,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
 
     setCart((prev) => [...prev, newItem]);
-    showNotification(`Added ${quantity}× ${product.name} to express cart!`);
+    showNotification(`${quantity}× ${product.name} added to your bag`);
   };
 
   const removeFromCart = (cartItemId: string) => {
@@ -220,6 +303,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })
         .filter((item): item is CartItem => item !== null)
     );
+  };
+
+  const updateCartItem = (cartItemId: string, customization: CartItemCustomization, quantity: number) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== cartItemId) return item;
+        const unitPrice = priceFor(item.product, customization);
+        return { ...item, customization, quantity, unitPrice, totalPrice: unitPrice * quantity };
+      })
+    );
+    showNotification('Drink updated');
   };
 
   const clearCart = () => {
@@ -281,7 +375,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     setOrders((prev) => [newOrder, ...prev]);
     clearCart();
-    showNotification(`Express order ${orderId} placed successfully!`);
+    showNotification(`Order ${orderId} placed (demo)`);
     return newOrder;
   };
 
@@ -347,6 +441,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         addToCart,
         removeFromCart,
         updateCartItemQty,
+        updateCartItem,
         clearCart,
         cartTotal,
         cartCount,
@@ -358,6 +453,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         cancelOrder,
         getOrderById,
         resetDemoData,
+        hydrated,
+        user,
+        signIn,
+        signOut,
+        favourites,
+        toggleFavourite,
+        searchQuery,
+        setSearchQuery,
         notification,
         showNotification,
       }}

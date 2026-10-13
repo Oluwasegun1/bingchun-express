@@ -1,238 +1,193 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { Search, ShoppingBag, MapPin, ChevronDown, User as UserIcon, Menu as MenuIcon, X } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
-import { 
-  ShoppingBag, 
-  MapPin, 
-  Clock, 
-  ChevronDown, 
-  ShieldAlert, 
-  LayoutDashboard,
-  Menu as MenuIcon,
-  X
-} from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
-function HeaderNavLinks() {
-  const pathname = usePathname();
-
-  return (
-    <nav className="hidden md:flex items-center gap-1 lg:gap-2">
-      <Link
-        href="/"
-        className={`px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
-          pathname === '/'
-            ? 'text-[#0C5CC4] bg-[#0C5CC4]/10'
-            : 'text-[#5B6E8C] hover:text-[#12233F] hover:bg-slate-100/60'
-        }`}
-      >
-        Menu
-      </Link>
-      <Link
-        href="/branches"
-        className={`px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
-          pathname === '/branches'
-            ? 'text-[#0C5CC4] bg-[#0C5CC4]/10'
-            : 'text-[#5B6E8C] hover:text-[#12233F] hover:bg-slate-100/60'
-        }`}
-      >
-        Branches
-      </Link>
-      <Link
-        href="/track"
-        className={`px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
-          pathname?.startsWith('/track')
-            ? 'text-[#0C5CC4] bg-[#0C5CC4]/10'
-            : 'text-[#5B6E8C] hover:text-[#12233F] hover:bg-slate-100/60'
-        }`}
-      >
-        Track Order
-      </Link>
-
-      {/* Staff Dashboard Portal Link */}
-      <Link
-        href="/staff"
-        className={`ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-          pathname?.startsWith('/staff')
-            ? 'bg-[#12233F] text-white border-[#12233F]'
-            : 'bg-white text-[#12233F] border-slate-200 hover:border-[#12233F] hover:bg-slate-50'
-        }`}
-      >
-        <LayoutDashboard className="w-3.5 h-3.5 text-[#0C5CC4]" />
-        <span>Staff Demo</span>
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-      </Link>
-    </nav>
-  );
-}
+const NAV = [
+  { href: '/', label: 'Menu' },
+  { href: '/branches', label: 'Branches' },
+  { href: '/track', label: 'Track order' },
+];
 
 export default function Header() {
-  const { 
-    selectedBranch, 
-    setIsBranchModalOpen, 
-    cartCount, 
-    setIsCartOpen 
-  } = useStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { selectedBranch, setIsBranchModalOpen, cartCount, setIsCartOpen, user, searchQuery, setSearchQuery } =
+    useStore();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchOpen(false);
+    if (pathname !== '/') router.push('/#menu');
+    else document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname?.startsWith(href));
+  const initial = user?.name?.trim().charAt(0).toUpperCase();
+  const iconBtn =
+    'relative inline-flex h-11 w-11 items-center justify-center rounded-ctl text-ink-soft transition-colors hover:bg-brand-50 hover:text-brand';
 
   return (
     <>
-      {/* Partnership Demo Disclaimer Banner */}
-      <div className="bg-[#12233F] text-slate-300 text-xs py-1.5 px-4 text-center font-medium border-b border-white/5 flex items-center justify-center gap-2">
-        <ShieldAlert className="w-3.5 h-3.5 text-[#FFD23F] shrink-0" />
-        <span>
-          <strong className="text-white">Concept Demo:</strong> Bing Chun Express is a partnership evaluation prototype for online express pickup in Nigeria. Not an official product.
-        </span>
+      <div className="bg-ink px-4 py-1.5 text-center text-[11px] leading-5 text-white/80">
+        Unofficial product concept · Menu, prices and payments are simulated
       </div>
 
-      <header className="sticky top-0 z-40 glass-header border-b border-[#0C5CC4]/10 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          
-          {/* Brand Wordmark */}
-          <Link href="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-11 h-11 rounded-2xl bg-[#0C5CC4] flex flex-col items-center justify-center text-white shadow-md shadow-[#0C5CC4]/20 group-hover:scale-105 transition-transform">
-              <span className="text-[13px] font-bold leading-none tracking-tight">冰淳</span>
-              <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FFD23F]">BC</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight text-[#12233F]">
-                  Bing Chun
-                </span>
-                <span className="bg-[#0C5CC4] text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider">
-                  EXPRESS
-                </span>
-              </div>
-              <span className="text-[11px] font-semibold text-[#5B6E8C] block -mt-1 tracking-wide">
-                Ice Cream &amp; Tea · Nigeria
-              </span>
-            </div>
+      <header className="sticky top-0 z-40 border-b border-line bg-white">
+        <div className="mx-auto flex h-[72px] max-w-6xl items-center gap-3 px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="Bing Chun Express — home">
+            <BrandLogo size={68} priority />
+            <span className="hidden rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-brand sm:inline">
+              Express
+            </span>
           </Link>
 
-          {/* Quick Branch Selector Pill */}
-          <button
-            onClick={() => setIsBranchModalOpen(true)}
-            className="hidden md:flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white border border-[#0C5CC4]/15 hover:border-[#0C5CC4]/40 shadow-xs hover:shadow-sm transition-all text-left group"
-          >
-            <div className="w-8 h-8 rounded-xl bg-[#0C5CC4]/10 flex items-center justify-center text-[#0C5CC4] group-hover:bg-[#0C5CC4] group-hover:text-white transition-colors">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#0C5CC4]">
-                <span>Pickup Branch</span>
-                <ChevronDown className="w-3 h-3 text-[#5B6E8C] group-hover:translate-y-0.5 transition-transform" />
-              </div>
-              <p className="text-xs font-bold text-[#12233F] truncate max-w-[170px]">
-                {selectedBranch.name}
-              </p>
-            </div>
-            <div className="hidden lg:flex items-center gap-1 pl-2 border-l border-slate-200 text-[11px] font-semibold text-emerald-600">
-              <Clock className="w-3 h-3" />
-              <span>{selectedBranch.estimatedPrepMins}</span>
-            </div>
-          </button>
+          <nav aria-label="Primary" className="ml-6 hidden items-center gap-1 md:flex">
+            {NAV.map((n) => (
+              <Link
+                key={n.href}
+                href={n.href}
+                aria-current={isActive(n.href) ? 'page' : undefined}
+                className={`rounded-ctl px-3 py-2 text-sm font-semibold transition-colors ${
+                  isActive(n.href) ? 'text-brand' : 'text-ink-soft hover:text-ink'
+                }`}
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
 
-          {/* Nav Links (Desktop) wrapped in Suspense */}
-          <Suspense fallback={
-            <div className="hidden md:flex items-center gap-2 text-xs font-bold text-slate-400">
-              <span>Menu</span> · <span>Branches</span> · <span>Track Order</span>
-            </div>
-          }>
-            <HeaderNavLinks />
-          </Suspense>
-
-          {/* Right Action: Cart Button */}
-          <div className="flex items-center gap-2">
-            {/* Mobile Branch button */}
+          <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setIsBranchModalOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-white border border-slate-200 text-[#0C5CC4]"
-              aria-label="Select Pickup Branch"
+              className="hidden max-w-[240px] items-center gap-2 rounded-ctl border border-line px-3 py-2 text-left transition-colors hover:border-brand-300 md:flex"
+              aria-label={`Pickup branch: ${selectedBranch.name}. Change branch`}
             >
-              <MapPin className="w-5 h-5" />
-            </button>
-
-            {/* Express Cart Trigger */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#0C5CC4] hover:bg-[#084393] text-white font-bold text-sm shadow-md shadow-[#0C5CC4]/25 hover:shadow-lg hover:shadow-[#0C5CC4]/35 hover:-translate-y-0.5 active:translate-y-0 transition-all"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span className="hidden sm:inline">Express Bag</span>
-              <span className="bg-[#FFD23F] text-[#12233F] text-xs font-extrabold w-5 h-5 rounded-full flex items-center justify-center">
-                {cartCount}
+              <MapPin className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+              <span className="min-w-0">
+                <span className="block text-[10px] font-semibold uppercase leading-none tracking-wider text-muted">
+                  Pickup from
+                </span>
+                <span className="block truncate text-[13px] font-semibold leading-tight">{selectedBranch.name}</span>
               </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted" aria-hidden />
             </button>
 
-            {/* Mobile Menu Toggle */}
+            <button className={iconBtn} onClick={() => setSearchOpen((v) => !v)} aria-label="Search the menu" aria-expanded={searchOpen}>
+              <Search className="h-5 w-5" />
+            </button>
+
+            <Link href={user ? '/account' : '/auth'} className={iconBtn} aria-label={user ? 'My account' : 'Sign in'}>
+              {user ? (
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">
+                  {initial}
+                </span>
+              ) : (
+                <UserIcon className="h-5 w-5" />
+              )}
+            </Link>
+
+            <button className={iconBtn} onClick={() => setIsCartOpen(true)} aria-label={`Open bag, ${cartCount} items`}>
+              <ShoppingBag className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1 text-[11px] font-bold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2.5 rounded-2xl bg-white border border-slate-200 text-[#12233F]"
-              aria-label="Toggle navigation menu"
+              className={`${iconBtn} md:hidden`}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+              {menuOpen ? <X className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Dropdown Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 py-4 space-y-2">
-            <div className="p-3 bg-[#EEF5FF] rounded-2xl mb-3 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-bold uppercase text-[#0C5CC4]">Selected Branch:</span>
-                <p className="text-sm font-bold text-[#12233F]">{selectedBranch.name}</p>
-                <p className="text-xs text-[#5B6E8C]">{selectedBranch.estimatedPrepMins} prep</p>
-              </div>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setIsBranchModalOpen(true);
-                }}
-                className="text-xs font-bold text-[#0C5CC4] bg-white px-3 py-1.5 rounded-xl border border-[#0C5CC4]/20 shadow-xs"
-              >
-                Change
+        {/* Mobile: branch strip, always visible and one tap away */}
+        <button
+          onClick={() => setIsBranchModalOpen(true)}
+          className="flex w-full items-center gap-2 border-t border-line bg-brand-50 px-4 py-2.5 text-left md:hidden"
+          aria-label={`Pickup branch: ${selectedBranch.name}. Change branch`}
+        >
+          <MapPin className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-[13px]">
+            <span className="text-muted">Pickup from </span>
+            <span className="font-semibold text-ink">{selectedBranch.name}</span>
+          </span>
+          <span className="text-xs font-semibold text-brand">Change</span>
+        </button>
+
+        {searchOpen && (
+          <form onSubmit={submitSearch} role="search" className="anim-fade border-t border-line bg-white px-4 py-3 sm:px-6">
+            <div className="mx-auto flex max-w-6xl items-center gap-2">
+              <label htmlFor="header-search" className="sr-only">
+                Search drinks
+              </label>
+              <input
+                id="header-search"
+                ref={searchRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search drinks, e.g. lychee, coconut, boba"
+                className="h-11 flex-1 rounded-ctl border border-line-strong bg-white px-3.5 text-ink placeholder:text-faint"
+              />
+              <button type="submit" className="h-11 rounded-ctl bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-dark">
+                Search
               </button>
             </div>
+          </form>
+        )}
 
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-xl text-base font-bold text-[#12233F] hover:bg-slate-100"
-            >
-              Drink &amp; Dessert Menu
-            </Link>
-            <Link
-              href="/branches"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-xl text-base font-bold text-[#12233F] hover:bg-slate-100"
-            >
-              Branch Locations &amp; Hours
-            </Link>
-            <Link
-              href="/track"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-xl text-base font-bold text-[#12233F] hover:bg-slate-100"
-            >
-              Track Order Status
-            </Link>
-            <div className="pt-2 border-t border-slate-100">
+        {menuOpen && (
+          <nav aria-label="Mobile" className="anim-fade border-t border-line bg-white px-4 py-2 md:hidden">
+            {NAV.map((n) => (
               <Link
-                href="/staff"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold bg-[#12233F] text-white"
+                key={n.href}
+                href={n.href}
+                onClick={() => setMenuOpen(false)}
+                className={`flex min-h-12 items-center rounded-ctl px-3 text-base font-semibold ${
+                  isActive(n.href) ? 'bg-brand-50 text-brand' : 'text-ink'
+                }`}
               >
-                <div className="flex items-center gap-2">
-                  <LayoutDashboard className="w-4 h-4 text-[#0C5CC4]" />
-                  <span>Open Staff Dashboard</span>
-                </div>
-                <span className="text-xs text-emerald-400 font-semibold">Active Queue</span>
+                {n.label}
               </Link>
-            </div>
-          </div>
+            ))}
+            <Link
+              href={user ? '/account' : '/auth'}
+              onClick={() => setMenuOpen(false)}
+              className="flex min-h-12 items-center rounded-ctl px-3 text-base font-semibold text-ink"
+            >
+              {user ? 'My account' : 'Sign in'}
+            </Link>
+          </nav>
         )}
       </header>
     </>

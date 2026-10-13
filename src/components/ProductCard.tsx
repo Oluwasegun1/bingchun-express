@@ -2,123 +2,75 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { Heart, Plus } from 'lucide-react';
 import { Product } from '@/types';
 import { formatNaira } from '@/lib/utils';
 import { useStore } from '@/context/StoreContext';
-import { Plus, ShieldCheck, Sparkles, SlidersHorizontal } from 'lucide-react';
 
-interface ProductCardProps {
-  product: Product;
-}
-
-export default function ProductCard({ product }: ProductCardProps) {
-  const { setSelectedProduct } = useStore();
+export default function ProductCard({ product }: { product: Product }) {
+  const { setSelectedProduct, favourites, toggleFavourite } = useStore();
+  const fav = favourites.includes(product.id);
+  const unavailable = !product.available;
+  const hasLarge = product.availableSizes && product.availableSizes.length > 1;
 
   return (
-    <div 
-      onClick={() => product.available && setSelectedProduct(product)}
-      className={`group bg-white rounded-3xl overflow-hidden border border-slate-100 hover:border-[#0C5CC4]/30 shadow-xs hover:shadow-xl hover:shadow-[#0C5CC4]/10 transition-all duration-300 flex flex-col cursor-pointer ${
-        !product.available ? 'opacity-65 grayscale-20 pointer-events-none' : ''
-      }`}
-    >
-      {/* Product Image Box */}
-      <div className="relative aspect-4/3 w-full bg-slate-100 overflow-hidden">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          unoptimized
-        />
-
-        {/* Floating Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-          {product.isVerified ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-[#0C5CC4]/90 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-xs">
-              <ShieldCheck className="w-3 h-3 text-[#FFD23F]" />
-              Verified Nigeria Menu
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-900 bg-amber-100/95 backdrop-blur-xs px-2.5 py-1 rounded-full shadow-xs">
-              <Sparkles className="w-3 h-3" />
-              Demo Catalog Item
-            </span>
-          )}
-
-          {product.featured && (
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#12233F] bg-[#FFD23F] px-2 py-0.5 rounded-full shadow-xs">
-              Popular
-            </span>
-          )}
-        </div>
-
-        {/* Unavailable overlay */}
-        {!product.available && (
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-2xs flex items-center justify-center">
-            <span className="bg-white/90 text-[#12233F] text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md">
-              Sold Out for Today
-            </span>
-          </div>
+    <article className="group flex flex-col overflow-hidden rounded-card border border-line bg-white transition-shadow hover:shadow-card">
+      <div className="relative aspect-square overflow-hidden bg-brand-50">
+        <button
+          type="button"
+          onClick={() => !unavailable && setSelectedProduct(product)}
+          disabled={unavailable}
+          aria-label={`Customise ${product.name}`}
+          className="absolute inset-0 z-0 block h-full w-full"
+        >
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
+            className={`object-cover transition-transform duration-300 group-hover:scale-[1.03] ${unavailable ? 'opacity-50 grayscale' : ''}`}
+            unoptimized
+          />
+        </button>
+        {unavailable ? (
+          <span className="absolute left-3 top-3 rounded-md bg-ink px-2 py-1 text-[11px] font-bold text-white">Sold out today</span>
+        ) : (
+          product.tag === 'Bestseller' && (
+            <span className="absolute left-3 top-3 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-brand shadow-card">Bestseller</span>
+          )
         )}
+        <button
+          type="button"
+          onClick={() => toggleFavourite(product.id)}
+          aria-label={fav ? `Remove ${product.name} from favourites` : `Save ${product.name} to favourites`}
+          aria-pressed={fav}
+          className="absolute right-1.5 top-1.5 z-10 flex h-11 w-11 items-center justify-center rounded-full"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-card">
+            <Heart className={`h-4 w-4 ${fav ? 'fill-brand text-brand' : 'text-ink-soft'}`} />
+          </span>
+        </button>
       </div>
 
-      {/* Product Content Details */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#0C5CC4]">
-              {product.category}
-            </span>
-            {product.chineseName && (
-              <span className="text-[11px] font-semibold text-[#5B6E8C]">
-                {product.chineseName}
-              </span>
-            )}
-          </div>
-
-          <h3 className="font-heading text-lg sm:text-xl font-bold text-[#12233F] group-hover:text-[#0C5CC4] transition-colors line-clamp-1">
-            {product.name}
-          </h3>
-
-          <p className="text-xs text-[#5B6E8C] mt-1 line-clamp-2 leading-relaxed">
-            {product.description}
-          </p>
-        </div>
-
-        {/* Price & Add Action */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+        <h3 className="text-[15px] font-bold leading-snug">{product.name}</h3>
+        <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">{product.description}</p>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
           <div>
-            <span className="text-[10px] font-semibold text-[#5B6E8C] block -mb-0.5">
-              Starting from
-            </span>
-            <span className="text-lg font-black text-[#12233F] tracking-tight">
-              {formatNaira(product.basePrice)}
-            </span>
+            <p className="text-base font-extrabold">{formatNaira(product.basePrice)}</p>
+            {hasLarge && <p className="text-[11px] text-muted">500ml · 700ml</p>}
           </div>
-
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedProduct(product);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#EEF5FF] hover:bg-[#0C5CC4] text-[#0C5CC4] hover:text-white font-bold text-xs transition-all shadow-2xs group-hover:bg-[#0C5CC4] group-hover:text-white"
+            onClick={() => setSelectedProduct(product)}
+            disabled={unavailable}
+            aria-label={`Add ${product.name} to bag`}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark active:bg-brand-900 disabled:bg-line-strong"
           >
-            {product.hasDrinkOptions ? (
-              <>
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Customize</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add</span>
-              </>
-            )}
+            <Plus className="h-5 w-5" strokeWidth={2.5} />
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

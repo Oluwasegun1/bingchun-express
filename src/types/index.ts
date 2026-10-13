@@ -1,4 +1,4 @@
-export type Category = 
+export type Category =
   | 'Fruit Milk Tea'
   | 'Fresh Fruit Tea'
   | 'Milkshakes'
@@ -28,7 +28,8 @@ export interface Product {
   description: string;
   basePrice: number;
   image: string;
-  isVerified: boolean;
+  tag?: string;
+  isVerified?: boolean;
   verifiedSource?: string;
   demoLabel?: string;
   available: boolean;
@@ -115,4 +116,10 @@ export interface Order {
     cancelledAt?: string;
   };
   notes?: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  phone: string; // normalised: last 10 digits
 }

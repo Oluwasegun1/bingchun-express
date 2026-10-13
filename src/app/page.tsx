@@ -1,441 +1,240 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import { Search, X, Clock, MapPin, Store, AlertCircle } from 'lucide-react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailModal from '@/components/ProductDetailModal';
 import BranchSelectorModal from '@/components/BranchSelectorModal';
 import CartDrawer from '@/components/CartDrawer';
 import { useStore } from '@/context/StoreContext';
 import { Category } from '@/types';
-import { 
-  Search, 
-  MapPin, 
-  Clock, 
-  Sparkles, 
-  ShieldCheck, 
-  SlidersHorizontal, 
-  ArrowRight, 
-  CheckCircle,
-  Coffee,
-  Heart,
-  Store,
-  ChevronRight,
-  Flame,
-  Award
-} from 'lucide-react';
+import { formatNaira } from '@/lib/utils';
 
-const CATEGORIES: { label: string; value: Category | 'All'; icon: string }[] = [
-  { label: 'All Items', value: 'All', icon: '✨' },
-  { label: 'Fruit Milk Tea', value: 'Fruit Milk Tea', icon: '🥥' },
-  { label: 'Fresh Fruit Tea', value: 'Fresh Fruit Tea', icon: '🍋' },
-  { label: 'Milkshakes', value: 'Milkshakes', icon: '🥤' },
-  { label: 'Smoothies', value: 'Smoothies', icon: '🍓' },
-  { label: 'Ice Cream & Sundaes', value: 'Ice Cream & Sundaes', icon: '🍨' },
-  { label: 'Extras & Bags', value: 'Snacks & Extras', icon: '🛍️' },
+type Filter = Category | 'All' | 'Favourites';
+
+const CATEGORIES: Category[] = [
+  'Fruit Milk Tea',
+  'Fresh Fruit Tea',
+  'Milkshakes',
+  'Smoothies',
+  'Ice Cream & Sundaes',
 ];
 
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4" aria-hidden>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="overflow-hidden rounded-card border border-line bg-white">
+          <div className="skeleton aspect-square" />
+          <div className="space-y-2 p-4">
+            <div className="skeleton h-4 w-3/4 rounded" />
+            <div className="skeleton h-3 w-full rounded" />
+            <div className="skeleton h-5 w-1/3 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function StorefrontPage() {
-  const { 
-    products, 
-    selectedBranch, 
-    setIsBranchModalOpen, 
-    setIsCartOpen 
-  } = useStore();
+  const { products, favourites, searchQuery, setSearchQuery, selectedBranch, resetDemoData, user } = useStore();
+  const [filter, setFilter] = useState<Filter>('All');
+  const [loading, setLoading] = useState(true);
 
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+  // Brief skeleton while the local demo catalogue hydrates, so layout never jumps.
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 450);
+    return () => clearTimeout(t);
+  }, []);
 
-  // Filtered products list
-  const filteredProducts = useMemo(() => {
+  const q = searchQuery.trim().toLowerCase();
+
+  const visible = useMemo(() => {
     return products.filter((p) => {
-      // Category filter
-      if (selectedCategory !== 'All' && p.category !== selectedCategory) {
-        return false;
-      }
-      // Verified only filter
-      if (showVerifiedOnly && !p.isVerified) {
-        return false;
-      }
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesName = p.name.toLowerCase().includes(query);
-        const matchesDesc = p.description.toLowerCase().includes(query);
-        const matchesCategory = p.category.toLowerCase().includes(query);
-        const matchesChinese = p.chineseName?.toLowerCase().includes(query);
-        return matchesName || matchesDesc || matchesCategory || matchesChinese;
-      }
-      return true;
+      if (filter === 'Favourites' && !favourites.includes(p.id)) return false;
+      if (filter !== 'All' && filter !== 'Favourites' && p.category !== filter) return false;
+      if (!q) return true;
+      return [p.name, p.description, p.category, p.chineseName ?? ''].some((s) => s.toLowerCase().includes(q));
     });
-  }, [products, selectedCategory, showVerifiedOnly, searchQuery]);
+  }, [products, filter, favourites, q]);
 
-  // Featured / Popular products
-  const featuredProducts = useMemo(() => {
-    return products.filter((p) => p.featured && p.available).slice(0, 4);
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    products.forEach((p) => m.set(p.category, (m.get(p.category) ?? 0) + 1));
+    return m;
   }, [products]);
 
-  const scrollToMenu = () => {
-    const el = document.getElementById('menu-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
+  const chip = (active: boolean) =>
+    `inline-flex h-11 shrink-0 items-center rounded-full border px-4 text-sm font-semibold transition-colors ${
+      active ? 'border-brand bg-brand text-white' : 'border-line-strong bg-white text-ink-soft hover:border-brand-300 hover:text-brand'
+    }`;
+
+  const goMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F4F8FD]">
+    <div className="flex min-h-screen flex-col bg-white">
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#EEF5FF]/70 to-[#F4F8FD] pt-6 pb-14 sm:pb-20 border-b border-[#0C5CC4]/10">
-          {/* Subtle decorative background circles */}
-          <div className="absolute top-0 right-0 -mr-24 -mt-24 w-96 h-96 rounded-full bg-[#0C5CC4]/5 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-24 -mb-24 w-96 h-96 rounded-full bg-[#FFD23F]/15 blur-3xl pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-            
-            {/* Express Pickup Branch Pill Notification */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#0C5CC4]/20 shadow-xs mb-6 cursor-pointer hover:border-[#0C5CC4] transition-colors"
-                 onClick={() => setIsBranchModalOpen(true)}>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-[#12233F]">
-                Ordering from: <strong className="text-[#0C5CC4]">{selectedBranch.name}</strong>
-              </span>
-              <span className="text-xs text-[#5B6E8C] hidden sm:inline">
-                ({selectedBranch.estimatedPrepMins} prep)
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-[#0C5CC4]" />
+        {/* Hero */}
+        <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 pb-10 pt-8 sm:px-6 md:grid-cols-[1fr_1.05fr] md:gap-12 md:pb-16 md:pt-14">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand">Order ahead · Pick up faster</p>
+            <h1 className="mt-3 text-[2.15rem] font-extrabold leading-[1.08] text-ink sm:text-5xl">
+              Your Bing Chun favourites. <span className="text-brand">Ready when you are.</span>
+            </h1>
+            <p className="mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">
+              Explore the menu, order ahead, and pick up your drinks with less waiting.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button onClick={goMenu} className="h-12 rounded-ctl bg-brand px-7 text-sm font-bold text-white shadow-card transition-colors hover:bg-brand-dark active:bg-brand-900">
+                Order now
+              </button>
+              <button onClick={goMenu} className="h-12 rounded-ctl border border-line-strong bg-white px-6 text-sm font-bold text-ink transition-colors hover:border-brand hover:text-brand">
+                Explore the menu
+              </button>
             </div>
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-soft">
+              <li className="flex items-center gap-2"><Clock className="h-4 w-4 text-brand" aria-hidden /> Ready in {selectedBranch.estimatedPrepMins}</li>
+              <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand" aria-hidden /> Pickup at {selectedBranch.name.split(',')[0]}</li>
+              <li className="flex items-center gap-2"><Store className="h-4 w-4 text-brand" aria-hidden /> Made fresh to order</li>
+            </ul>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              
-              {/* Left Column Copy */}
-              <div className="lg:col-span-7 space-y-6">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-[#0C5CC4]/10 text-[#0C5CC4] text-xs font-extrabold uppercase tracking-widest">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Bing Chun Express Pickup
-                  </div>
-                  <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-black text-[#12233F] tracking-tight leading-[1.08]">
-                    Your Bing Chun favourites. <br className="hidden sm:inline" />
-                    <span className="text-[#0C5CC4]">Ready when you are.</span>
-                  </h1>
-                  <p className="text-base sm:text-lg text-[#4A5D78] max-w-xl font-normal leading-relaxed">
-                    Order ahead, customize your tea sweetness, ice level, and toppings, choose your pickup branch in Lagos, and skip the mall counter queue.
-                  </p>
-                </div>
-
-                {/* Primary & Secondary CTAs */}
-                <div className="flex flex-wrap items-center gap-3.5 pt-2">
-                  <button
-                    onClick={scrollToMenu}
-                    className="flex items-center gap-2 px-7 py-4 rounded-2xl bg-[#0C5CC4] hover:bg-[#084393] text-white font-extrabold text-base shadow-lg shadow-[#0C5CC4]/25 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all"
-                  >
-                    <span>Order Now</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => setIsBranchModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-[#12233F] font-bold text-base border border-slate-200 shadow-xs hover:border-[#0C5CC4]/30 transition-all"
-                  >
-                    <MapPin className="w-4 h-4 text-[#0C5CC4]" />
-                    <span>Select Branch</span>
-                  </button>
-                </div>
-
-                {/* Proof Points */}
-                <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200/60 max-w-lg">
-                  <div className="space-y-0.5">
-                    <span className="font-heading text-xl font-extrabold text-[#12233F]">100%</span>
-                    <p className="text-[11px] text-[#5B6E8C] font-semibold leading-tight">Fresh Brewed Teas &amp; Real Fruit</p>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="font-heading text-xl font-extrabold text-[#0C5CC4]">10–15m</span>
-                    <p className="text-[11px] text-[#5B6E8C] font-semibold leading-tight">Express Grab &amp; Go Pickup</p>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="font-heading text-xl font-extrabold text-[#12233F]">7+</span>
-                    <p className="text-[11px] text-[#5B6E8C] font-semibold leading-tight">Lagos Outlets Represented</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column Drink Showcase Image */}
-              <div className="lg:col-span-5 relative">
-                <div className="relative aspect-square w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-                  <Image
-                    src="https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=1000&q=85"
-                    alt="Bing Chun Brown Sugar Boba Tea"
-                    fill
-                    priority
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
-
-                  {/* Overlaid Highlight Badge */}
-                  <div className="absolute bottom-5 left-5 right-5 p-4 rounded-2xl bg-white/95 backdrop-blur-md shadow-lg border border-white/40 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#0C5CC4] uppercase">
-                        <Flame className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Best Seller in Lagos</span>
-                      </div>
-                      <p className="font-heading text-sm font-bold text-[#12233F]">
-                        Brown Sugar Boba Milk Tea
-                      </p>
-                      <p className="text-xs font-black text-[#0C5CC4]">₦4,200</p>
-                    </div>
-
-                    <button
-                      onClick={scrollToMenu}
-                      className="px-3.5 py-2 rounded-xl bg-[#0C5CC4] text-white text-xs font-bold shadow-xs hover:bg-[#084393]"
-                    >
-                      Customize
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </div>
+          <div className="relative aspect-[4/3] overflow-hidden rounded-sheet bg-brand-50">
+            <Image
+              src="/brand/hero-drinks.jpg"
+              alt="Three Bing Chun milk teas: lychee jasmine, strawberry coconut and brown sugar boba"
+              fill
+              priority
+              sizes="(min-width:768px) 560px, 100vw"
+              className="object-cover"
+              unoptimized
+            />
           </div>
         </section>
 
-        {/* Popular / Best Sellers Section */}
-        {featuredProducts.length > 0 && (
-          <section className="py-10 bg-white border-b border-slate-100">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase text-[#0C5CC4] tracking-wider">
-                    <Award className="w-4 h-4 text-amber-500" />
-                    <span>Lagos Favourites</span>
-                  </div>
-                  <h2 className="font-heading text-2xl font-black text-[#12233F]">
-                    Featured Drinks &amp; Treats
-                  </h2>
-                </div>
-                <button
-                  onClick={scrollToMenu}
-                  className="text-xs font-bold text-[#0C5CC4] hover:underline flex items-center gap-1"
-                >
-                  <span>View All ({products.length})</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {featuredProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Interactive Menu Catalogue Section */}
-        <section id="menu-section" className="py-12 sm:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            
-            {/* Section Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        {/* Menu */}
+        <section id="menu" className="scroll-mt-28 border-t border-line bg-canvas">
+          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 md:py-14">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <span className="text-xs font-extrabold uppercase text-[#0C5CC4] tracking-widest block mb-1">
-                  Online Ordering Menu
-                </span>
-                <h2 className="font-heading text-3xl sm:text-4xl font-black text-[#12233F]">
-                  Explore the Catalogue
-                </h2>
-                <p className="text-sm text-[#5B6E8C] mt-1">
-                  Prices based on verified Nigerian menu research and clearly indicated demo options.
-                </p>
+                <h2 className="text-3xl font-extrabold">The menu</h2>
+                <p className="mt-1 text-sm text-muted">Made to order, customised your way.</p>
               </div>
-
-              {/* Search Bar & Verified Toggle */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search teas, sundaes, boba..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-slate-200 focus:outline-hidden focus:border-[#0C5CC4] text-xs text-[#12233F] w-full sm:w-64 shadow-2xs font-medium"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                {/* Verified Menu Only Filter Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowVerifiedOnly(!showVerifiedOnly)}
-                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-bold border transition-colors ${
-                    showVerifiedOnly
-                      ? 'bg-[#0C5CC4] text-white border-[#0C5CC4]'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#FFD23F]" />
-                  <span>Verified Only</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Horizontal Scrollable Category Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.value)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all shadow-2xs ${
-                    selectedCategory === cat.value
-                      ? 'bg-[#0C5CC4] text-white shadow-md shadow-[#0C5CC4]/20 scale-102'
-                      : 'bg-white text-[#12233F] hover:bg-slate-50 border border-slate-200/80'
-                  }`}
-                >
-                  <span>{cat.icon}</span>
-                  <span>{cat.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Products Grid */}
-            {filteredProducts.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-[#EEF5FF] text-[#0C5CC4] flex items-center justify-center mx-auto">
-                  <Search className="w-7 h-7" />
-                </div>
-                <h3 className="font-heading text-lg font-bold text-[#12233F]">
-                  No matching products found
-                </h3>
-                <p className="text-xs text-[#5B6E8C] max-w-sm mx-auto">
-                  We couldn&rsquo;t find anything matching &ldquo;{searchQuery}&rdquo;. Try another term or reset your filters.
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory('All');
-                    setShowVerifiedOnly(false);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-[#0C5CC4] text-white text-xs font-bold"
-                >
-                  Reset Filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Why Bing Chun Express Section */}
-        <section className="py-14 bg-white border-y border-slate-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-10">
-              <span className="text-xs font-extrabold uppercase text-[#0C5CC4] tracking-widest block mb-1">
-                Express Pickup Promise
-              </span>
-              <h2 className="font-heading text-3xl font-black text-[#12233F]">
-                Freshly Brewed. Zero Mall Queues.
-              </h2>
-              <p className="text-sm text-[#5B6E8C] mt-2">
-                Designed to make enjoying premium bubble tea and Hokkaido-style desserts effortless across busy Lagos malls.
+              <p className="inline-flex items-center gap-1.5 text-xs text-muted">
+                <AlertCircle className="h-3.5 w-3.5" aria-hidden /> Illustrative menu and prices for this prototype
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-6 rounded-3xl bg-[#EEF5FF]/70 border border-[#0C5CC4]/15 space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#0C5CC4] text-white flex items-center justify-center font-bold text-xl shadow-md shadow-[#0C5CC4]/20">
-                  🧋
-                </div>
-                <h3 className="font-heading text-lg font-bold text-[#12233F]">
-                  Custom Made Every Cup
-                </h3>
-                <p className="text-xs text-[#5B6E8C] leading-relaxed">
-                  Choose your precise sweetness (0% to 100%), ice level, and artisanal toppings like slow-cooked brown sugar boba or cheese foam.
-                </p>
+            <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist" aria-label="Menu categories">
+                <button role="tab" aria-selected={filter === 'All'} onClick={() => setFilter('All')} className={chip(filter === 'All')}>
+                  All
+                </button>
+                {CATEGORIES.filter((c) => counts.get(c)).map((c) => (
+                  <button key={c} role="tab" aria-selected={filter === c} onClick={() => setFilter(c)} className={chip(filter === c)}>
+                    {c}
+                  </button>
+                ))}
+                {user && (
+                  <button role="tab" aria-selected={filter === 'Favourites'} onClick={() => setFilter('Favourites')} className={chip(filter === 'Favourites')}>
+                    Favourites{favourites.length > 0 && ` (${favourites.length})`}
+                  </button>
+                )}
               </div>
 
-              <div className="p-6 rounded-3xl bg-[#EEF5FF]/70 border border-[#0C5CC4]/15 space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#0C5CC4] text-white flex items-center justify-center font-bold text-xl shadow-md shadow-[#0C5CC4]/20">
-                  ⚡
-                </div>
-                <h3 className="font-heading text-lg font-bold text-[#12233F]">
-                  Express Pickup Counter
-                </h3>
-                <p className="text-xs text-[#5B6E8C] leading-relaxed">
-                  Your order is prepared and bagged with a dedicated 4-digit pickup code before you reach the food court counter.
-                </p>
-              </div>
-
-              <div className="p-6 rounded-3xl bg-[#EEF5FF]/70 border border-[#0C5CC4]/15 space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#0C5CC4] text-white flex items-center justify-center font-bold text-xl shadow-md shadow-[#0C5CC4]/20">
-                  📍
-                </div>
-                <h3 className="font-heading text-lg font-bold text-[#12233F]">
-                  Lagos Coverage
-                </h3>
-                <p className="text-xs text-[#5B6E8C] leading-relaxed">
-                  Order to Novare Mall Sangotedo, Purple Mall Maryland, Jara Mall Ikeja, or Landmark Centre VI with live branch prep estimates.
-                </p>
+              <div className="relative md:w-72">
+                <label htmlFor="menu-search" className="sr-only">Search the menu</label>
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" aria-hidden />
+                <input
+                  id="menu-search"
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search drinks"
+                  className="h-11 w-full rounded-ctl border border-line-strong bg-white pl-10 pr-10 placeholder:text-faint"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-muted hover:text-ink">
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
+
+            <div className="mt-6" aria-live="polite">
+              {loading ? (
+                <SkeletonGrid />
+              ) : products.length === 0 ? (
+                <div className="rounded-card border border-line bg-white px-6 py-14 text-center">
+                  <AlertCircle className="mx-auto h-8 w-8 text-danger" />
+                  <h3 className="mt-3 text-lg font-bold">We couldn&apos;t load the menu</h3>
+                  <p className="mt-1 text-sm text-muted">Something went wrong while loading the demo catalogue.</p>
+                  <button onClick={resetDemoData} className="mt-5 h-11 rounded-ctl bg-brand px-5 text-sm font-bold text-white hover:bg-brand-dark">Try again</button>
+                </div>
+              ) : visible.length === 0 ? (
+                <div className="rounded-card border border-line bg-white px-6 py-14 text-center">
+                  <Search className="mx-auto h-8 w-8 text-faint" />
+                  <h3 className="mt-3 text-lg font-bold">
+                    {filter === 'Favourites' && !q ? 'No favourites yet' : 'No drinks match your search'}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted">
+                    {filter === 'Favourites' && !q ? 'Tap the heart on any drink to save it here.' : 'Try a different word, or browse every category.'}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilter('All');
+                    }}
+                    className="mt-5 h-11 rounded-ctl border border-line-strong px-5 text-sm font-bold hover:border-brand hover:text-brand"
+                  >
+                    Show all drinks
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-4 text-sm text-muted">
+                    {visible.length} {visible.length === 1 ? 'drink' : 'drinks'}
+                    {q && <> for “{searchQuery}”</>} · from {formatNaira(Math.min(...visible.map((p) => p.basePrice)))}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+                    {visible.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
+        </section>
+
+        {/* How it works */}
+        <section id="how" className="mx-auto max-w-6xl scroll-mt-28 px-4 py-12 sm:px-6 md:py-16">
+          <h2 className="text-3xl font-extrabold">Order now. Pick up easy.</h2>
+          <ol className="mt-8 grid gap-8 md:grid-cols-3">
+            {[
+              ['Choose your drinks', 'Pick a branch, customise your drink and add it to your bag.'],
+              ['Get your pickup time', 'Place your order and follow it from received to ready.'],
+              ['Collect when it’s ready', 'Show your order number and code at the express pickup point.'],
+            ].map(([t, d], i) => (
+              <li key={t} className="flex gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-base font-extrabold text-brand">{i + 1}</span>
+                <div>
+                  <h3 className="text-base font-bold">{t}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{d}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-[#12233F] text-slate-400 text-xs py-12 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-8 border-b border-white/10">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-xl bg-[#0C5CC4] text-white flex items-center justify-center font-bold text-xs">
-                  冰淳
-                </div>
-                <span className="font-heading text-lg font-black text-white">Bing Chun Express</span>
-              </div>
-              <p className="text-slate-400 text-xs">
-                Concept presentation demo for online express pickup in Nigeria.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-xs font-semibold text-slate-300">
-              <a href="#menu-section" className="hover:text-white transition-colors">Menu</a>
-              <a href="/branches" className="hover:text-white transition-colors">Branch Locations</a>
-              <a href="/track" className="hover:text-white transition-colors">Track Order</a>
-              <a href="/staff" className="text-[#FFD23F] hover:underline">Staff Demo Dashboard</a>
-            </div>
-          </div>
-
-          <div className="space-y-3 text-[11px] text-slate-400 leading-relaxed">
-            <p>
-              <strong>Disclaimer:</strong> Bing Chun Express is an independent product and design concept developed for business partnership discussions with Bing Chun Nigeria. It is not an officially endorsed or deployed service of Belu Meals Limited or Bing Chun.
-            </p>
-            <p>
-              Product names and prices are sourced from publicly available store menus, Chowdeck listings, and official Instagram publications where verified, and labelled as illustrative demo items where unconfirmed. Real monetary transactions, SMS verifications, and physical store notifications are not executed.
-            </p>
-            <div className="pt-2 text-slate-500">
-              &copy; 2026 Bing Chun Express (Concept Demo). Built for Bing Chun Nigeria.
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Global Modals & Drawers */}
+      <Footer />
       <ProductDetailModal />
       <BranchSelectorModal />
       <CartDrawer />

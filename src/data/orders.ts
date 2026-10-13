@@ -13,7 +13,7 @@ export const INITIAL_ORDERS: Order[] = [
       {
         productId: 'prod-fmt-1',
         productName: 'Brown Sugar Boba Milk Tea',
-        productImage: 'https://images.unsplash.com/photo-1558857563-b371033873b8?auto=format&fit=crop&w=800&q=80',
+        productImage: '/menu/brown-sugar-boba.jpg',
         category: 'Fruit Milk Tea',
         quantity: 2,
         unitPrice: 4800,
@@ -28,8 +28,8 @@ export const INITIAL_ORDERS: Order[] = [
       },
       {
         productId: 'prod-ic-2',
-        productName: 'Brown Sugar Boba Sundae',
-        productImage: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
+        productName: 'Chocolate Oreo Sundae',
+        productImage: '/menu/oreo-sundae.jpg',
         category: 'Ice Cream & Sundaes',
         quantity: 1,
         unitPrice: 2800,
@@ -64,8 +64,8 @@ export const INITIAL_ORDERS: Order[] = [
     items: [
       {
         productId: 'prod-fft-1',
-        productName: 'Strawberry Lemon Tea',
-        productImage: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80',
+        productName: 'Blueberry Fruit Tea',
+        productImage: '/menu/blueberry-fruit-tea.jpg',
         category: 'Fresh Fruit Tea',
         quantity: 1,
         unitPrice: 4300,
@@ -79,9 +79,9 @@ export const INITIAL_ORDERS: Order[] = [
       },
       {
         productId: 'prod-fft-5',
-        productName: 'Fresh Iced Lemonade',
-        productImage: 'https://images.unsplash.com/photo-1523371067-1cfc6fe366eb?auto=format&fit=crop&w=800&q=80',
-        category: 'Fresh Fruit Tea',
+        productName: 'Strawberry Smoothie',
+        productImage: '/menu/strawberry-smoothie.jpg',
+        category: 'Smoothies',
         quantity: 1,
         unitPrice: 2000,
         totalPrice: 2000,
@@ -118,7 +118,7 @@ export const INITIAL_ORDERS: Order[] = [
       {
         productId: 'prod-msh-1',
         productName: 'Chocolate Oreo Milkshake',
-        productImage: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80',
+        productImage: '/menu/oreo-milkshake.jpg',
         category: 'Milkshakes',
         quantity: 1,
         unitPrice: 4500,
@@ -131,7 +131,7 @@ export const INITIAL_ORDERS: Order[] = [
       {
         productId: 'prod-sm-1',
         productName: 'Strawberry Smoothie',
-        productImage: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=800&q=80',
+        productImage: '/menu/strawberry-smoothie.jpg',
         category: 'Smoothies',
         quantity: 1,
         unitPrice: 3700,
@@ -167,9 +167,9 @@ export const INITIAL_ORDERS: Order[] = [
     items: [
       {
         productId: 'prod-fft-2',
-        productName: 'Strawberry Mulberry Tea',
-        productImage: 'https://images.unsplash.com/photo-1556881286-fc6915169721?auto=format&fit=crop&w=800&q=80',
-        category: 'Fresh Fruit Tea',
+        productName: 'Strawberry Coconut Jasmine Milk Tea',
+        productImage: '/menu/strawberry-coconut-jasmine.jpg',
+        category: 'Fruit Milk Tea',
         quantity: 2,
         unitPrice: 4800,
         totalPrice: 9600,
@@ -183,7 +183,7 @@ export const INITIAL_ORDERS: Order[] = [
       {
         productId: 'prod-fmt-4',
         productName: 'Lychee Jasmine Milk Tea',
-        productImage: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80',
+        productImage: '/menu/lychee-jasmine.jpg',
         category: 'Fruit Milk Tea',
         quantity: 1,
         unitPrice: 4200,
@@ -222,8 +222,8 @@ export const INITIAL_ORDERS: Order[] = [
     items: [
       {
         productId: 'prod-ic-1',
-        productName: 'Original Soft-Serve Ice Cream Cone',
-        productImage: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=800&q=80',
+        productName: 'Chocolate Oreo Sundae',
+        productImage: '/menu/oreo-sundae.jpg',
         category: 'Ice Cream & Sundaes',
         quantity: 2,
         unitPrice: 1000,
