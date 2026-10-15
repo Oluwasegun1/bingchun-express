@@ -41,6 +41,7 @@ export default function StaffDashboardPage() {
     orders, 
     branches, 
     updateOrderStatus, 
+    updateIceCreamStatus,
     cancelOrder, 
     resetDemoData, 
     showNotification 
@@ -59,6 +60,10 @@ export default function StaffDashboardPage() {
     const preparingCount = orders.filter((o) => o.status === 'preparing').length;
     const readyCount = orders.filter((o) => o.status === 'ready').length;
     const collectedCount = orders.filter((o) => o.status === 'collected').length;
+    const iceCreamPendingCount = orders.filter((o) =>
+      o.status !== 'cancelled' &&
+      o.items.some((it) => (it.isIceCream || it.category === 'Ice Cream') && it.iceCreamPrepStatus !== 'collected')
+    ).length;
     const totalSales = orders.reduce((sum, o) => (o.status !== 'cancelled' ? sum + o.total : sum), 0);
 
     return {
@@ -67,6 +72,7 @@ export default function StaffDashboardPage() {
       preparingCount,
       readyCount,
       collectedCount,
+      iceCreamPendingCount,
       totalCount: orders.length,
       totalSales,
     };
@@ -175,7 +181,7 @@ export default function StaffDashboardPage() {
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
         
         {/* Real-time Demo Operational Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-500 uppercase">New Orders</span>
             <div className="flex items-baseline gap-2 mt-1">
@@ -213,6 +219,19 @@ export default function StaffDashboardPage() {
                 {metrics.readyCount}
               </span>
               <span className="text-[10px] text-slate-400 font-medium">for pickup</span>
+            </div>
+          </div>
+
+          {/* Ice Cream Queue Metric */}
+          <div className="bg-white p-4 rounded-2xl border border-brand/40 shadow-2xs bg-brand-50/20">
+            <span className="text-[11px] font-bold text-brand uppercase flex items-center gap-1">
+              <span>🍨</span> Ice Cream Queue
+            </span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="font-heading text-2xl font-black text-brand">
+                {metrics.iceCreamPendingCount}
+              </span>
+              <span className="text-[10px] text-brand/80 font-bold">scoop on arrival</span>
             </div>
           </div>
 
@@ -383,37 +402,164 @@ export default function StaffDashboardPage() {
                       </span>
                     </div>
 
-                    {/* Order Line Items */}
-                    <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                        Items ({order.items.reduce((s, i) => s + i.quantity, 0)})
-                      </span>
-                      <div className="space-y-2">
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="text-xs">
-                            <div className="flex justify-between font-bold text-ink">
-                              <span>
-                                {item.quantity}× {item.productName}
+                    {/* Order Line Items: Separate Drinks and Ice Cream */}
+                    <div className="space-y-3 pt-1">
+                      {/* Ice Cream Section (Prepare on Arrival) */}
+                      {(() => {
+                        const iceCreamItems = order.items
+                          .map((it, idx) => ({ it, idx }))
+                          .filter(({ it }) => it.isIceCream || it.category === 'Ice Cream' || it.prepareOnArrival);
+
+                        if (iceCreamItems.length === 0) return null;
+
+                        return (
+                          <div className="rounded-2xl border-2 border-brand/30 bg-brand-50/50 p-3 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-brand">
+                                <span>🍨</span> Prepaid Ice Cream (Prepare on Arrival)
                               </span>
-                              <span>{formatNaira(item.totalPrice)}</span>
+                              <span className="text-[10px] font-extrabold uppercase bg-brand text-white px-2 py-0.5 rounded-full">
+                                Prepaid
+                              </span>
                             </div>
-                            {/* Customization Details for Barista */}
-                            <div className="text-[10px] text-brand font-medium flex flex-wrap gap-1 mt-0.5">
-                              {item.customization.size && <span>[{item.customization.size}]</span>}
-                              {item.customization.sweetness && <span>Sugar: {item.customization.sweetness}</span>}
-                              {item.customization.ice && <span>Ice: {item.customization.ice}</span>}
-                              {item.customization.toppings.map((t) => (
-                                <span key={t.id}>+{t.name}</span>
+
+                            <div className="space-y-2">
+                              {iceCreamItems.map(({ it: item, idx }) => {
+                                const pType = item.iceCreamProductType || item.customization.productType || (item.productName.toLowerCase().includes('cone') ? 'Cone' : 'Cup');
+                                const flav = item.iceCreamFlavor || item.customization.flavor || 'Vanilla';
+                                const prepStatus = item.iceCreamPrepStatus || 'awaiting_arrival';
+
+                                return (
+                                  <div key={idx} className="bg-white rounded-xl p-2.5 border border-brand/20 shadow-2xs space-y-2">
+                                    <div className="flex items-start justify-between gap-1">
+                                      <div>
+                                        <span className="font-extrabold text-xs text-ink">
+                                          {item.quantity}× {pType} Ice Cream
+                                        </span>
+                                        <p className="text-[11px] text-brand font-bold">
+                                          Flavour: <span className="underline decoration-brand/30">{flav}</span>
+                                        </p>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="text-xs font-bold text-ink">{formatNaira(item.totalPrice)}</span>
+                                        <span className="block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                          {order.paymentStatus === 'Paid' ? 'Paid' : 'Prepaid'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Prep status & operational action */}
+                                    <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase">Status:</span>
+                                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                          prepStatus === 'awaiting_arrival'
+                                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                            : prepStatus === 'preparing'
+                                            ? 'bg-purple-100 text-purple-800 border border-purple-300 animate-pulse'
+                                            : prepStatus === 'ready'
+                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                            : 'bg-slate-100 text-slate-700'
+                                        }`}>
+                                          {prepStatus === 'awaiting_arrival'
+                                            ? 'Awaiting Arrival'
+                                            : prepStatus === 'preparing'
+                                            ? 'Preparing / Scooping'
+                                            : prepStatus === 'ready'
+                                            ? 'Ready'
+                                            : 'Collected'}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-1">
+                                        {prepStatus === 'awaiting_arrival' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => updateIceCreamStatus(order.id, idx, 'preparing')}
+                                            className="px-2.5 py-1 bg-brand hover:bg-brand-dark text-white rounded-lg text-[10px] font-bold transition-all shadow-xs"
+                                          >
+                                            Customer Arrived: Scoop
+                                          </button>
+                                        )}
+                                        {prepStatus === 'preparing' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => updateIceCreamStatus(order.id, idx, 'ready')}
+                                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition-all shadow-xs"
+                                          >
+                                            Mark Ready
+                                          </button>
+                                        )}
+                                        {prepStatus === 'ready' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => updateIceCreamStatus(order.id, idx, 'collected')}
+                                            className="px-2.5 py-1 bg-slate-800 hover:bg-black text-white rounded-lg text-[10px] font-bold transition-all shadow-xs"
+                                          >
+                                            Mark Collected
+                                          </button>
+                                        )}
+                                        {prepStatus === 'collected' && (
+                                          <button
+                                            type="button"
+                                            onClick={() => updateIceCreamStatus(order.id, idx, 'awaiting_arrival')}
+                                            className="text-[10px] text-slate-400 hover:text-slate-600 underline font-semibold"
+                                          >
+                                            Reset
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Drink Station (Prepare Ahead) */}
+                      {(() => {
+                        const drinkItems = order.items
+                          .map((it, idx) => ({ it, idx }))
+                          .filter(({ it }) => !it.isIceCream && it.category !== 'Ice Cream' && !it.prepareOnArrival);
+
+                        if (drinkItems.length === 0) return null;
+
+                        return (
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+                              🧋 Drink Station ({drinkItems.reduce((s, { it }) => s + it.quantity, 0)}) · Prepare Ahead
+                            </span>
+                            <div className="space-y-2">
+                              {drinkItems.map(({ it: item }, i) => (
+                                <div key={i} className="text-xs">
+                                  <div className="flex justify-between font-bold text-ink">
+                                    <span>
+                                      {item.quantity}× {item.productName}
+                                    </span>
+                                    <span>{formatNaira(item.totalPrice)}</span>
+                                  </div>
+                                  {/* Customization Details for Barista */}
+                                  <div className="text-[10px] text-brand font-medium flex flex-wrap gap-1 mt-0.5">
+                                    {item.customization.size && <span>[{item.customization.size}]</span>}
+                                    {item.customization.sweetness && <span>Sugar: {item.customization.sweetness}</span>}
+                                    {item.customization.ice && <span>Ice: {item.customization.ice}</span>}
+                                    {item.customization.toppings.map((t) => (
+                                      <span key={t.id}>+{t.name}</span>
+                                    ))}
+                                  </div>
+                                  {item.customization.notes && (
+                                    <p className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded-sm mt-0.5">
+                                      Note: {item.customization.notes}
+                                    </p>
+                                  )}
+                                </div>
                               ))}
                             </div>
-                            {item.customization.notes && (
-                              <p className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded-sm mt-0.5">
-                                Note: {item.customization.notes}
-                              </p>
-                            )}
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </div>
 
                     {order.notes && (
@@ -519,83 +665,188 @@ export default function StaffDashboardPage() {
       </main>
 
       {/* Order Details Modal Drawer */}
-      {selectedOrderDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase text-brand tracking-wider">Order Detail</span>
-                <h3 className="font-heading text-xl font-black text-ink">
-                  {selectedOrderDetails.id}
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedOrderDetails(null)}
-                className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {selectedOrderDetails && (() => {
+        const activeOrder = orders.find((o) => o.id === selectedOrderDetails.id) ?? selectedOrderDetails;
+        const modalDrinkItems = activeOrder.items
+          .map((it, idx) => ({ it, idx }))
+          .filter(({ it }) => !it.isIceCream && it.category !== 'Ice Cream' && !it.prepareOnArrival);
+        const modalIceCreamItems = activeOrder.items
+          .map((it, idx) => ({ it, idx }))
+          .filter(({ it }) => it.isIceCream || it.category === 'Ice Cream' || it.prepareOnArrival);
 
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl">
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200">
+              <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div>
-                  <span className="text-slate-400 font-semibold block">Customer Name</span>
-                  <span className="font-bold text-ink text-sm">{selectedOrderDetails.customerName}</span>
+                  <span className="text-[10px] font-extrabold uppercase text-brand tracking-wider">Order Detail</span>
+                  <h3 className="font-heading text-xl font-black text-ink">
+                    {activeOrder.id}
+                  </h3>
                 </div>
-                <div>
-                  <span className="text-slate-400 font-semibold block">Phone</span>
-                  <span className="font-bold text-ink text-sm">{selectedOrderDetails.customerPhone}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold block">Pickup Code</span>
-                  <span className="font-bold text-amber-600 text-sm">PIN: {selectedOrderDetails.pickupCode}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold block">Branch</span>
-                  <span className="font-bold text-ink text-sm">{selectedOrderDetails.branchName}</span>
-                </div>
+                <button
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-ink transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div>
-                <h4 className="font-bold text-sm text-ink mb-2">Itemized Prep List</h4>
-                <div className="space-y-2 divide-y divide-slate-100">
-                  {selectedOrderDetails.items.map((i, idx) => (
-                    <div key={idx} className="pt-2">
-                      <div className="flex justify-between font-bold text-ink">
-                        <span>{i.quantity}× {i.productName}</span>
-                        <span>{formatNaira(i.totalPrice)}</span>
-                      </div>
-                      <div className="text-[11px] text-brand mt-0.5 space-x-1">
-                        {i.customization.size && <span>Size: {i.customization.size}</span>}
-                        {i.customization.sweetness && <span>· Sugar: {i.customization.sweetness}</span>}
-                        {i.customization.ice && <span>· Ice: {i.customization.ice}</span>}
-                        {i.customization.toppings.map(t => (
-                          <span key={t.id}>· +{t.name}</span>
-                        ))}
-                      </div>
+              <div className="p-6 overflow-y-auto space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl">
+                  <div>
+                    <span className="text-slate-400 font-semibold block">Customer Name</span>
+                    <span className="font-bold text-ink text-sm">{activeOrder.customerName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block">Phone</span>
+                    <span className="font-bold text-ink text-sm">{activeOrder.customerPhone}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block">Pickup Code</span>
+                    <span className="font-bold text-amber-600 text-sm">PIN: {activeOrder.pickupCode}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-semibold block">Payment</span>
+                    <span className="font-bold text-emerald-700 text-sm">
+                      {activeOrder.paymentStatus} ({activeOrder.paymentMethod.replace(' (Demo)', '')})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ice Cream Component Section */}
+                {modalIceCreamItems.length > 0 && (
+                  <div className="rounded-2xl border-2 border-brand/30 bg-brand-50/50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-black text-xs uppercase tracking-wider text-brand flex items-center gap-1.5">
+                        <span>🍨</span> Prepaid Ice Cream (Prepare on Arrival)
+                      </h4>
+                      <span className="text-[10px] font-bold text-brand bg-white px-2 py-0.5 rounded-full border border-brand/20">
+                        Do not scoop ahead of time
+                      </span>
                     </div>
-                  ))}
+
+                    <div className="space-y-3">
+                      {modalIceCreamItems.map(({ it: i, idx }) => {
+                        const pType = i.iceCreamProductType || i.customization.productType || (i.productName.toLowerCase().includes('cone') ? 'Cone' : 'Cup');
+                        const flav = i.iceCreamFlavor || i.customization.flavor || 'Vanilla';
+                        const prepStatus = i.iceCreamPrepStatus || 'awaiting_arrival';
+
+                        return (
+                          <div key={idx} className="bg-white rounded-xl p-3 border border-brand/20 shadow-2xs space-y-2.5">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <span className="font-extrabold text-sm text-ink block">
+                                  {i.quantity}× {pType} Ice Cream
+                                </span>
+                                <span className="text-xs text-brand font-bold">
+                                  Flavour: <span className="underline">{flav}</span>
+                                </span>
+                                <span className="text-[11px] text-slate-400 block mt-0.5">
+                                  Product Type: <strong className="text-ink">{pType}</strong>
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-black text-sm text-ink block">{formatNaira(i.totalPrice)}</span>
+                                <span className="inline-block text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-0.5">
+                                  Prepaid · {activeOrder.paymentStatus}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Status changer buttons */}
+                            <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                Update Preparation Status:
+                              </span>
+                              <div className="grid grid-cols-4 gap-1.5">
+                                {[
+                                  { s: 'awaiting_arrival' as const, label: 'Awaiting' },
+                                  { s: 'preparing' as const, label: 'Scooping' },
+                                  { s: 'ready' as const, label: 'Ready' },
+                                  { s: 'collected' as const, label: 'Collected' },
+                                ].map(({ s, label }) => {
+                                  const isActive = prepStatus === s;
+                                  return (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => updateIceCreamStatus(activeOrder.id, idx, s)}
+                                      className={`py-1.5 px-1 rounded-lg text-[10px] font-bold transition-all text-center ${
+                                        isActive
+                                          ? s === 'ready'
+                                            ? 'bg-emerald-600 text-white shadow-xs'
+                                            : s === 'preparing'
+                                            ? 'bg-purple-600 text-white shadow-xs'
+                                            : s === 'collected'
+                                            ? 'bg-slate-800 text-white'
+                                            : 'bg-amber-500 text-white shadow-xs'
+                                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                      }`}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Drink Station Section */}
+                {modalDrinkItems.length > 0 && (
+                  <div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-2">
+                      🧋 Drink Station (Prepare Ahead of Pickup)
+                    </h4>
+                    <div className="space-y-2 divide-y divide-slate-100 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      {modalDrinkItems.map(({ it: i }, idx) => (
+                        <div key={idx} className={idx > 0 ? 'pt-2' : ''}>
+                          <div className="flex justify-between font-bold text-ink">
+                            <span>{i.quantity}× {i.productName}</span>
+                            <span>{formatNaira(i.totalPrice)}</span>
+                          </div>
+                          <div className="text-[11px] text-brand mt-0.5 space-x-1">
+                            {i.customization.size && <span>Size: {i.customization.size}</span>}
+                            {i.customization.sweetness && <span>· Sugar: {i.customization.sweetness}</span>}
+                            {i.customization.ice && <span>· Ice: {i.customization.ice}</span>}
+                            {i.customization.toppings.map((t) => (
+                              <span key={t.id}>· +{t.name}</span>
+                            ))}
+                          </div>
+                          {i.customization.notes && (
+                            <p className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded-sm mt-0.5 inline-block">
+                              Note: {i.customization.notes}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-slate-100 flex justify-between font-black text-sm text-ink">
+                  <span>Total Amount Payable:</span>
+                  <span className="text-base text-brand">{formatNaira(activeOrder.total)}</span>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-between font-black text-sm text-ink">
-                <span>Total Amount:</span>
-                <span className="text-base text-brand">{formatNaira(selectedOrderDetails.total)}</span>
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="px-4 py-2 bg-ink text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  Close
+                </button>
               </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <button
-                onClick={() => setSelectedOrderDetails(null)}
-                className="px-4 py-2 bg-ink text-white text-xs font-bold rounded-xl"
-              >
-                Close
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Cancel Confirmation Dialog */}
       {orderToCancel && (

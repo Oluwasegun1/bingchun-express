@@ -20,7 +20,16 @@ const PAYMENTS: { id: Payment; title: string; hint: string }[] = [
 
 function lineDetail(item: CartItem) {
   const c = item.customization;
-  return [c.size?.split(' ')[0], c.sweetness && `${c.sweetness} sugar`, c.ice, c.servingType, c.toppings?.map((t) => t.name).join(', ')]
+  const isIceCream = item.product.category === 'Ice Cream' || !!item.product.prepareOnArrival;
+  if (isIceCream) {
+    const type = c.productType || (item.product.name.toLowerCase().includes('cone') ? 'Cone' : 'Cup');
+    return [
+      `Type: ${type}`,
+      c.flavor && `Flavour: ${c.flavor}`,
+      c.toppings?.map((t) => t.name).join(', ')
+    ].filter(Boolean).join(' · ');
+  }
+  return [c.size?.split(' ')[0], c.sweetness && `${c.sweetness} sugar`, c.ice, c.flavor && `Flavour: ${c.flavor}`, c.servingType, c.toppings?.map((t) => t.name).join(', ')]
     .filter(Boolean)
     .join(' · ');
 }
@@ -173,23 +182,46 @@ export default function CheckoutPage() {
             <section className="rounded-card border border-line bg-white p-5 sm:p-6" aria-labelledby="summary-title">
               <h2 id="summary-title" className="text-base font-bold">Order summary</h2>
               <ul className="mt-4 divide-y divide-line">
-                {cart.map((item) => (
-                  <li key={item.id} className="flex gap-3 py-3">
-                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-brand-50">
-                      <Image src={item.product.image} alt="" fill sizes="56px" className="object-cover" unoptimized />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold leading-snug">{item.quantity} × {item.product.name}</p>
-                      <p className="line-clamp-2 text-xs text-muted">{lineDetail(item)}</p>
-                    </div>
-                    <p className="text-sm font-semibold">{formatNaira(item.totalPrice)}</p>
-                  </li>
-                ))}
+                {cart.map((item) => {
+                  const isIce = item.product.category === 'Ice Cream' || !!item.product.prepareOnArrival;
+                  return (
+                    <li key={item.id} className="flex gap-3 py-3">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-brand-50">
+                        <Image src={item.product.image} alt="" fill sizes="56px" className="object-cover" unoptimized />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-1">
+                          <p className="text-sm font-semibold leading-snug">{item.quantity} × {item.product.name}</p>
+                          <p className="text-sm font-bold text-ink">{formatNaira(item.totalPrice)}</p>
+                        </div>
+                        <p className="text-[11px] text-muted">{formatNaira(item.unitPrice)} each</p>
+                        <p className="line-clamp-2 text-xs text-muted mt-0.5">{lineDetail(item)}</p>
+                        {isIce && (
+                          <span className="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                            🍨 Prepaid · Scoop on Arrival
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
+
+              {cart.some((i) => i.product.category === 'Ice Cream' || i.product.prepareOnArrival) && (
+                <div className="mt-3 rounded-xl border border-brand/20 bg-brand-50/80 p-3 text-xs text-brand-dark">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <span>🍨</span> Express Ice Cream Pickup Notice
+                  </p>
+                  <p className="mt-0.5 text-muted text-[11px] leading-relaxed">
+                    Prepaid in full with your order. To prevent melting, staff prepare drinks ahead of time and will freshly scoop your ice cream into your cone or cup upon your arrival at the express counter.
+                  </p>
+                </div>
+              )}
+
               <dl className="mt-3 space-y-1.5 border-t border-line pt-4 text-sm">
                 <div className="flex justify-between text-muted"><dt>Subtotal</dt><dd>{formatNaira(cartTotal)}</dd></div>
                 <div className="flex justify-between text-muted"><dt>Service fee</dt><dd>₦0</dd></div>
-                <div className="flex justify-between pt-1.5 text-lg font-extrabold"><dt>Total</dt><dd>{formatNaira(cartTotal)}</dd></div>
+                <div className="flex justify-between pt-1.5 text-lg font-extrabold"><dt>Total payable</dt><dd className="text-brand">{formatNaira(cartTotal)}</dd></div>
               </dl>
               <button type="submit" disabled={!user || submitting} className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-ctl bg-brand text-sm font-bold text-white transition-colors hover:bg-brand-dark active:bg-brand-900 disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-white">
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

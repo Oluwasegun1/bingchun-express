@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
-import { X, Minus, Plus, Check } from 'lucide-react';
+import { X, Minus, Plus, Check, Sparkles } from 'lucide-react';
 import { CartItemCustomization, IceLevel, Product, SweetnessLevel, Topping } from '@/types';
 import { formatNaira } from '@/lib/utils';
 import { useModal } from '@/lib/useModal';
@@ -39,6 +39,12 @@ export default function ProductSheet({ product, mode = 'add', initial, onClose, 
   const ref = useModal<HTMLDivElement>(true, onClose);
   const c0 = initial?.customization;
 
+  const isIceCream = product.category === 'Ice Cream' || !!product.prepareOnArrival;
+  const productType = (product.productType || (product.name.toLowerCase().includes('cone') ? 'Cone' : 'Cup')) as 'Cone' | 'Cup';
+
+  const [flavor, setFlavor] = useState<string>(
+    c0?.flavor ?? product.customDessertOptions?.flavors?.[0] ?? ''
+  );
   const [size, setSize] = useState<'Regular (500ml)' | 'Large (700ml)'>(c0?.size ?? 'Regular (500ml)');
   const [sweetness, setSweetness] = useState<SweetnessLevel>(c0?.sweetness ?? '75%');
   const [ice, setIce] = useState<IceLevel>(c0?.ice ?? 'Regular Ice');
@@ -54,18 +60,22 @@ export default function ProductSheet({ product, mode = 'add', initial, onClose, 
 
   const summary = useMemo(() => {
     const parts: string[] = [];
+    if (isIceCream) parts.push(`${productType}`);
+    if (flavor) parts.push(`Flavour: ${flavor}`);
     if (product.availableSizes?.length) parts.push(size.split(' ')[0]);
     if (product.hasDrinkOptions) parts.push(`${sweetness} sugar`, ice);
-    if (serving) parts.push(serving);
+    if (serving && !isIceCream) parts.push(serving);
     if (toppings.length) parts.push(toppings.map((t) => t.name).join(', '));
     return parts.join(' · ');
-  }, [product, size, sweetness, ice, serving, toppings]);
+  }, [product, isIceCream, productType, flavor, size, sweetness, ice, serving, toppings]);
 
   const toggleTopping = (t: Topping) =>
     setToppings((prev) => (prev.some((x) => x.id === t.id) ? prev.filter((x) => x.id !== t.id) : [...prev, t]));
 
   const submit = () => {
     const customization: CartItemCustomization = { toppings };
+    if (flavor) customization.flavor = flavor;
+    if (isIceCream) customization.productType = productType;
     if (product.availableSizes?.length) customization.size = size;
     if (product.hasDrinkOptions) {
       customization.sweetness = sweetness;
@@ -131,6 +141,48 @@ export default function ProductSheet({ product, mode = 'add', initial, onClose, 
             </p>
 
             <div className="mt-6 space-y-6">
+              {isIceCream && (
+                <div className="rounded-2xl border border-brand/20 bg-brand-50/80 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-xs">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-brand">
+                        Prepaid Item · Prepare on Arrival
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                        To prevent melting, staff will <strong>not</strong> scoop your ice cream ahead of time. When you arrive at the counter and present your pickup code or order number, staff will scoop your freshly prepared {flavor || 'ice cream'} into your {productType.toLowerCase()}.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {product.customDessertOptions?.flavors && product.customDessertOptions.flavors.length > 0 && (
+                <OptionGroup title="Select Flavour" hint="Choose one · Required">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {product.customDessertOptions.flavors.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        aria-pressed={flavor === f}
+                        onClick={() => setFlavor(f)}
+                        className={`${choice(flavor === f)} flex flex-col items-start justify-center py-2.5 px-3 text-left`}
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <span className="font-bold">{f}</span>
+                          {flavor === f && <Check className="h-4 w-4 text-brand shrink-0" />}
+                        </div>
+                        <span className="text-[11px] text-muted">
+                          {f.includes('&') ? 'Two-flavour twist' : 'Classic flavour'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </OptionGroup>
+              )}
+
               {product.availableSizes && product.availableSizes.length > 0 && (
                 <OptionGroup title="Size">
                   <div className="grid grid-cols-2 gap-2">
@@ -144,7 +196,7 @@ export default function ProductSheet({ product, mode = 'add', initial, onClose, 
                 </OptionGroup>
               )}
 
-              {product.customDessertOptions?.servingTypes && (
+              {product.customDessertOptions?.servingTypes && !isIceCream && (
                 <OptionGroup title="Served in">
                   <div className="grid grid-cols-2 gap-2">
                     {product.customDessertOptions.servingTypes.map((s) => (
@@ -241,7 +293,7 @@ export default function ProductSheet({ product, mode = 'add', initial, onClose, 
                 </button>
               </div>
               <button onClick={submit} className="flex h-12 flex-1 items-center justify-between rounded-ctl bg-brand px-5 text-sm font-bold text-white transition-colors hover:bg-brand-dark active:bg-brand-900">
-                <span>{mode === 'edit' ? 'Update drink' : 'Add to bag'}</span>
+                <span>{mode === 'edit' ? 'Update item' : isIceCream ? 'Add to bag · Prepaid' : 'Add to bag'}</span>
                 <span>{formatNaira(total)}</span>
               </button>
             </div>

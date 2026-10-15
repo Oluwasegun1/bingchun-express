@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { Check, Clock, MapPin, RotateCcw, X } from 'lucide-react';
+import { Check, Clock, MapPin, RotateCcw, X, Sparkles, Info } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import { useStore } from '@/context/StoreContext';
 import { formatNaira, formatTime } from '@/lib/utils';
@@ -21,7 +21,7 @@ function stamp(o: Order, s: OrderStatus): string | undefined {
 function Tracking() {
   const params = useParams<{ id: string }>();
   const placed = useSearchParams().get('placed') === '1';
-  const { getOrderById, updateOrderStatus, products, addToCart, setIsCartOpen, hydrated } = useStore();
+  const { getOrderById, updateOrderStatus, updateIceCreamStatus, products, addToCart, setIsCartOpen, hydrated } = useStore();
   const order = getOrderById(params?.id ?? '');
 
   if (!hydrated) return <div className="py-24 text-center text-sm text-muted">Loading order…</div>;
@@ -41,6 +41,10 @@ function Tracking() {
   const ready = order.status === 'ready';
   const nextStatus = STATUS_ORDER[idx + 1];
   const meta = STATUS_META[order.status];
+
+  const iceCreamItems = order.items
+    .map((it, i) => ({ it, idx: i }))
+    .filter(({ it }) => it.isIceCream || it.category === 'Ice Cream' || it.prepareOnArrival);
 
   const reorder = () => {
     let n = 0;
@@ -85,6 +89,96 @@ function Tracking() {
                   <p className="text-xs font-bold uppercase tracking-wider text-muted">Pickup code</p>
                   <p className="text-4xl font-extrabold tracking-[0.2em] text-ink">{order.pickupCode}</p>
                   <p className="mt-3 text-sm text-ink-soft">Head to the <b>express pickup point</b> at {order.branchName} and show this screen with your order number.</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Ice Cream Prepare-on-Arrival Banner */}
+          {iceCreamItems.length > 0 && (
+            <section className="rounded-card border-2 border-brand/40 bg-brand-50/50 p-5 sm:p-6" aria-labelledby="ice-cream-title">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand text-white shadow-xs">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 id="ice-cream-title" className="text-base font-extrabold text-brand">
+                      Prepaid Ice Cream · Prepare on Arrival
+                    </h2>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-brand text-white px-2 py-0.5 rounded-full">
+                      Prepaid
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                    To keep your ice cream cold and prevent it from melting, staff <strong>prepare your ice cream upon your arrival</strong> at the store counter.
+                  </p>
+
+                  <div className="mt-4 space-y-2.5">
+                    {iceCreamItems.map(({ it: item, idx: itemIdx }) => {
+                      const pType = item.iceCreamProductType || item.customization.productType || (item.productName.toLowerCase().includes('cone') ? 'Cone' : 'Cup');
+                      const flav = item.iceCreamFlavor || item.customization.flavor || 'Vanilla';
+                      const prepStatus = item.iceCreamPrepStatus || 'awaiting_arrival';
+
+                      return (
+                        <div key={itemIdx} className="rounded-xl border border-brand/20 bg-white p-3 shadow-2xs">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-bold text-sm text-ink">
+                                {item.quantity}× {pType} Ice Cream
+                              </p>
+                              <p className="text-xs text-brand font-semibold">
+                                Flavour: {flav}
+                              </p>
+                              <p className="text-[11px] text-muted mt-0.5">
+                                Instruction: <strong className="text-brand">Scoop on arrival</strong>
+                              </p>
+                            </div>
+                            <span className={`text-[11px] font-black uppercase px-2.5 py-1 rounded-full ${
+                              prepStatus === 'awaiting_arrival'
+                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                : prepStatus === 'preparing'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300 animate-pulse'
+                                : prepStatus === 'ready'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              {prepStatus === 'awaiting_arrival'
+                                ? 'Awaiting Arrival'
+                                : prepStatus === 'preparing'
+                                ? 'Scooping Now'
+                                : prepStatus === 'ready'
+                                ? 'Scooped & Ready'
+                                : 'Collected'}
+                            </span>
+                          </div>
+
+                          {prepStatus === 'awaiting_arrival' && (
+                            <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                              <span className="text-muted text-[11px]">Show PIN at counter to begin scooping.</span>
+                              <button
+                                onClick={() => updateIceCreamStatus(order.id, itemIdx, 'preparing')}
+                                className="px-2.5 py-1 rounded-lg border border-brand/40 bg-brand-50 text-brand text-[10px] font-bold hover:bg-brand hover:text-white transition-colors"
+                              >
+                                Simulate: I&apos;m at counter
+                              </button>
+                            </div>
+                          )}
+                          {prepStatus === 'preparing' && (
+                            <div className="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                              <span className="text-purple-700 text-[11px] font-medium">Staff is currently scooping your fresh {flav} ice cream!</span>
+                              <button
+                                onClick={() => updateIceCreamStatus(order.id, itemIdx, 'ready')}
+                                className="px-2.5 py-1 rounded-lg border border-emerald-400 bg-emerald-50 text-emerald-800 text-[10px] font-bold hover:bg-emerald-600 hover:text-white transition-colors"
+                              >
+                                Simulate: Ready
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </section>
@@ -149,21 +243,36 @@ function Tracking() {
             <ul className="mt-3 divide-y divide-line">
               {order.items.map((it, i) => {
                 const c = it.customization;
-                const detail = [c.size?.split(' ')[0], c.sweetness && `${c.sweetness} sugar`, c.ice, c.servingType, c.toppings?.map((t) => t.name).join(', ')].filter(Boolean).join(' · ');
+                const isIce = it.isIceCream || it.category === 'Ice Cream' || it.prepareOnArrival;
+                const pType = it.iceCreamProductType || c.productType || (it.productName.toLowerCase().includes('cone') ? 'Cone' : 'Cup');
+                const flav = it.iceCreamFlavor || c.flavor;
+
+                const detail = isIce
+                  ? [`Type: ${pType}`, flav && `Flavour: ${flav}`, c.toppings?.map((t) => t.name).join(', ')].filter(Boolean).join(' · ')
+                  : [c.size?.split(' ')[0], c.sweetness && `${c.sweetness} sugar`, c.ice, c.servingType, c.toppings?.map((t) => t.name).join(', ')].filter(Boolean).join(' · ');
+
                 return (
                   <li key={i} className="flex gap-3 py-3">
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-brand-50"><Image src={it.productImage} alt="" fill sizes="56px" className="object-cover" unoptimized /></div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{it.quantity} × {it.productName}</p>
-                      {detail && <p className="line-clamp-2 text-xs text-muted">{detail}</p>}
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="text-sm font-semibold">{it.quantity} × {it.productName}</p>
+                        <p className="text-sm font-semibold">{formatNaira(it.totalPrice)}</p>
+                      </div>
+                      <p className="text-[11px] text-muted">{formatNaira(it.unitPrice)} each</p>
+                      {detail && <p className="line-clamp-2 text-xs text-muted mt-0.5">{detail}</p>}
+                      {isIce && (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
+                          🍨 Prepaid · Prepare on Arrival
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm font-semibold">{formatNaira(it.totalPrice)}</p>
                   </li>
                 );
               })}
             </ul>
             <div className="mt-2 flex justify-between border-t border-line pt-3 text-base font-extrabold"><span>Total</span><span>{formatNaira(order.total)}</span></div>
-            <p className="mt-1 text-xs text-muted">{order.paymentMethod} · {order.paymentStatus === 'Paid' ? 'Simulated payment' : 'Pay when you collect'}</p>
+            <p className="mt-1 text-xs text-muted">{order.paymentMethod} · {order.paymentStatus === 'Paid' ? 'Paid in advance (Prepaid)' : 'Pay when you collect'}</p>
             <div className="mt-4 flex gap-2">
               <button onClick={reorder} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-ctl border border-line-strong text-sm font-semibold hover:border-brand hover:text-brand"><RotateCcw className="h-4 w-4" /> Reorder</button>
             </div>

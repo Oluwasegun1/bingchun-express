@@ -16,6 +16,7 @@ import { formatNaira } from '@/lib/utils';
 type Filter = Category | 'All' | 'Favourites';
 
 const CATEGORIES: Category[] = [
+  'Ice Cream',
   'Fruit Milk Tea',
   'Fresh Fruit Tea',
   'Milkshakes',
@@ -88,7 +89,7 @@ export default function StorefrontPage() {
               Your Bing Chun favourites. <span className="text-brand">Ready when you are.</span>
             </h1>
             <p className="mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">
-              Explore the menu, order ahead, and pick up your drinks with less waiting.
+              Explore freshly made milk teas and prepaid soft-serve ice cream. Order ahead and pick up faster at the express counter.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <button onClick={goMenu} className="h-12 rounded-ctl bg-brand px-7 text-sm font-bold text-white shadow-card transition-colors hover:bg-brand-dark active:bg-brand-900">
@@ -101,7 +102,7 @@ export default function StorefrontPage() {
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-ink-soft">
               <li className="flex items-center gap-2"><Clock className="h-4 w-4 text-brand" aria-hidden /> Ready in {selectedBranch.estimatedPrepMins}</li>
               <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-brand" aria-hidden /> Pickup at {selectedBranch.name.split(',')[0]}</li>
-              <li className="flex items-center gap-2"><Store className="h-4 w-4 text-brand" aria-hidden /> Made fresh to order</li>
+              <li className="flex items-center gap-2"><Store className="h-4 w-4 text-brand" aria-hidden /> Fresh scoops on arrival</li>
             </ul>
           </div>
 

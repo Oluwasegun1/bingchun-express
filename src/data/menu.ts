@@ -15,6 +15,50 @@ export const STANDARD_SIZES: SizeOption[] = [
 ];
 
 export const INITIAL_PRODUCTS: Product[] = [
+  // --- Ice Cream (Prepaid · Scoop on Arrival) ---
+  {
+    id: 'prod-icecream-cone',
+    name: 'Cone Ice Cream',
+    chineseName: '甜筒冰淇淋',
+    category: 'Ice Cream',
+    description: 'Crisp, golden waffle cone filled with fresh, velvety soft-serve ice cream. Prepaid and scooped fresh upon your arrival at the counter.',
+    basePrice: 1000,
+    tag: 'Prepaid · Scoop on Arrival',
+    image: '/menu/cone_ice_cream.jpg',
+    isVerified: true,
+    verifiedSource: 'Bing Chun Verified Menu',
+    available: true,
+    featured: true,
+    hasDrinkOptions: false,
+    productType: 'Cone',
+    prepareOnArrival: true,
+    customDessertOptions: {
+      flavors: ['Vanilla', 'Chocolate', 'Vanilla & Chocolate'],
+      servingTypes: ['Crispy Waffle Cone'],
+    },
+  },
+  {
+    id: 'prod-icecream-cup',
+    name: 'Cup Ice Cream',
+    chineseName: '杯装冰淇淋',
+    category: 'Ice Cream',
+    description: 'Silky, rich soft-serve ice cream served in a mess-free dessert cup with spoon. Prepaid and scooped fresh upon your arrival.',
+    basePrice: 1200,
+    tag: 'Prepaid · Scoop on Arrival',
+    image: '/menu/cup_ice_cream.jpg',
+    isVerified: true,
+    verifiedSource: 'Bing Chun Store Menu',
+    available: true,
+    featured: true,
+    hasDrinkOptions: false,
+    productType: 'Cup',
+    prepareOnArrival: true,
+    customDessertOptions: {
+      flavors: ['Vanilla', 'Chocolate', 'Vanilla & Chocolate'],
+      servingTypes: ['Dessert Cup with Spoon'],
+    },
+  },
+
   // --- Ice Cream & Sundaes ---
   {
     id: 'prod-sundae-choco-blue',

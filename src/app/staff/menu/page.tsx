@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 const CATEGORIES: Category[] = [
+  'Ice Cream',
   'Fruit Milk Tea',
   'Fresh Fruit Tea',
   'Milkshakes',

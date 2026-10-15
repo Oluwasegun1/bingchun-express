@@ -8,6 +8,7 @@ import {
   CartItemCustomization, 
   Order, 
   OrderStatus,
+  IceCreamPrepStatus,
   User
 } from '@/types';
 import { INITIAL_PRODUCTS } from '@/data/menu';
@@ -52,6 +53,7 @@ interface StoreContextType {
     notes?: string;
   }) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateIceCreamStatus: (orderId: string, itemIdx: number, status: IceCreamPrepStatus) => void;
   cancelOrder: (orderId: string) => void;
   getOrderById: (orderId: string) => Order | undefined;
   resetDemoData: () => void;
@@ -77,8 +79,8 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-const STORAGE_KEY_PRODUCTS = 'bc_products_v3';
-const STORAGE_KEY_ORDERS = 'bc_orders_v2';
+const STORAGE_KEY_PRODUCTS = 'bc_products_v4';
+const STORAGE_KEY_ORDERS = 'bc_orders_v3';
 const STORAGE_KEY_CART = 'bc_cart_v2';
 const STORAGE_KEY_BRANCH = 'bc_selected_branch_v2';
 const STORAGE_KEY_USER = 'bc_user_v2';
@@ -126,12 +128,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       const storedProducts = localStorage.getItem(STORAGE_KEY_PRODUCTS);
       if (storedProducts) {
-        setProducts(JSON.parse(storedProducts));
+        const parsed: Product[] = JSON.parse(storedProducts);
+        // Ensure new catalog items (e.g. Cone and Cup Ice Cream) are merged in
+        const missing = INITIAL_PRODUCTS.filter((initP) => !parsed.some((p) => p.id === initP.id));
+        if (missing.length > 0) {
+          setProducts([...missing, ...parsed]);
+        } else {
+          setProducts(parsed);
+        }
       }
 
       const storedOrders = localStorage.getItem(STORAGE_KEY_ORDERS);
       if (storedOrders) {
-        setOrders(JSON.parse(storedOrders));
+        const parsedOrders: Order[] = JSON.parse(storedOrders);
+        const missingOrders = INITIAL_ORDERS.filter((initO) => !parsedOrders.some((o) => o.id === initO.id));
+        if (missingOrders.length > 0) {
+          setOrders([...parsedOrders, ...missingOrders]);
+        } else {
+          setOrders(parsedOrders);
+        }
       }
 
       const storedCart = localStorage.getItem(STORAGE_KEY_CART);
@@ -339,16 +354,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const pickupCode = generatePickupCode();
     const now = new Date().toISOString();
 
-    const orderItems = cart.map((c) => ({
-      productId: c.productId,
-      productName: c.product.name,
-      productImage: c.product.image,
-      category: c.product.category,
-      quantity: c.quantity,
-      unitPrice: c.unitPrice,
-      totalPrice: c.totalPrice,
-      customization: c.customization,
-    }));
+    const orderItems = cart.map((c) => {
+      const isIceCream = c.product.category === 'Ice Cream' || c.product.prepareOnArrival || c.product.name.toLowerCase().includes('ice cream');
+      const iceCreamProductType = (c.customization.productType || (c.product.name.toLowerCase().includes('cone') ? 'Cone' : 'Cup')) as 'Cone' | 'Cup';
+      const iceCreamFlavor = c.customization.flavor || 'Vanilla';
+
+      return {
+        productId: c.productId,
+        productName: c.product.name,
+        productImage: c.product.image,
+        category: c.product.category,
+        quantity: c.quantity,
+        unitPrice: c.unitPrice,
+        totalPrice: c.totalPrice,
+        customization: c.customization,
+        isIceCream,
+        prepareOnArrival: isIceCream,
+        iceCreamProductType: isIceCream ? iceCreamProductType : undefined,
+        iceCreamFlavor: isIceCream ? iceCreamFlavor : undefined,
+        iceCreamPrepStatus: isIceCream ? ('awaiting_arrival' as IceCreamPrepStatus) : undefined,
+      };
+    });
 
     const newOrder: Order = {
       id: orderId,
@@ -391,16 +417,65 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (status === 'collected') updatedTimeline.collectedAt = now;
           if (status === 'cancelled') updatedTimeline.cancelledAt = now;
 
+          // If entire order is marked collected, also mark any ice cream items as collected
+          const updatedItems = status === 'collected'
+            ? order.items.map((it) => (it.isIceCream ? { ...it, iceCreamPrepStatus: 'collected' as IceCreamPrepStatus } : it))
+            : order.items;
+
           return {
             ...order,
             status,
             timeline: updatedTimeline,
+            items: updatedItems,
           };
         }
         return order;
       })
     );
     showNotification(`Order ${orderId} updated to: ${status.toUpperCase()}`);
+  };
+
+  const updateIceCreamStatus = (orderId: string, itemIdx: number, status: IceCreamPrepStatus) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id === orderId) {
+          const nextItems = order.items.map((it, idx) => {
+            if (idx === itemIdx) {
+              return {
+                ...it,
+                iceCreamPrepStatus: status,
+              };
+            }
+            return it;
+          });
+
+          // Check if all ice cream items are collected and order was ready
+          const allIceCreamCollected = nextItems
+            .filter((it) => it.isIceCream)
+            .every((it) => it.iceCreamPrepStatus === 'collected');
+
+          let nextStatus = order.status;
+          if (allIceCreamCollected && order.status === 'ready' && status === 'collected') {
+            nextStatus = 'collected';
+          }
+
+          return {
+            ...order,
+            items: nextItems,
+            status: nextStatus,
+          };
+        }
+        return order;
+      })
+    );
+
+    const labels: Record<IceCreamPrepStatus, string> = {
+      awaiting_arrival: 'Awaiting Arrival',
+      preparing: 'Preparing / Scooping',
+      ready: 'Scooped & Ready',
+      collected: 'Collected',
+    };
+    showNotification(`Order ${orderId} ice cream updated to: ${labels[status]}`);
   };
 
   const cancelOrder = (orderId: string) => {
@@ -450,6 +525,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         orders,
         createOrder,
         updateOrderStatus,
+        updateIceCreamStatus,
         cancelOrder,
         getOrderById,
         resetDemoData,

@@ -1,4 +1,5 @@
 export type Category =
+  | 'Ice Cream'
   | 'Fruit Milk Tea'
   | 'Fresh Fruit Tea'
   | 'Milkshakes'
@@ -37,6 +38,8 @@ export interface Product {
   hasDrinkOptions: boolean; // if true, allows sweetness and ice
   availableSizes?: SizeOption[];
   availableToppings?: Topping[];
+  productType?: 'Cone' | 'Cup' | 'Drink' | 'Other';
+  prepareOnArrival?: boolean;
   customDessertOptions?: {
     flavors?: string[];
     servingTypes?: string[];
@@ -64,6 +67,7 @@ export interface CartItemCustomization {
   toppings: Topping[];
   flavor?: string;
   servingType?: string;
+  productType?: 'Cone' | 'Cup';
   notes?: string;
 }
 
@@ -78,6 +82,7 @@ export interface CartItem {
 }
 
 export type OrderStatus = 'received' | 'confirmed' | 'preparing' | 'ready' | 'collected' | 'cancelled';
+export type IceCreamPrepStatus = 'awaiting_arrival' | 'preparing' | 'ready' | 'collected';
 
 export interface OrderItem {
   productId: string;
@@ -88,6 +93,11 @@ export interface OrderItem {
   unitPrice: number;
   totalPrice: number;
   customization: CartItemCustomization;
+  isIceCream?: boolean;
+  iceCreamProductType?: 'Cone' | 'Cup';
+  iceCreamFlavor?: string;
+  iceCreamPrepStatus?: IceCreamPrepStatus;
+  prepareOnArrival?: boolean;
 }
 
 export interface Order {
